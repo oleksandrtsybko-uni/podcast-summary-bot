@@ -5,6 +5,7 @@ Fetches and parses podcast RSS feeds to extract episode information.
 
 import re
 import feedparser
+import httpx
 from datetime import datetime
 from typing import Optional
 from email.utils import parsedate_to_datetime
@@ -15,6 +16,9 @@ from ..utils.logger import get_logger
 from ..utils.helpers import clean_html, extract_linkedin_urls, extract_guest_names_from_title
 
 logger = get_logger(__name__)
+
+# Custom User-Agent to avoid being blocked
+USER_AGENT = "PodcastSummaryBot/1.0 (https://github.com/oleksandrtsybko-uni/podcast-summary-bot)"
 
 
 class RSSParser:
@@ -36,7 +40,15 @@ class RSSParser:
         """
         try:
             logger.info(f"Fetching RSS feed for {podcast.name}: {podcast.rss_url}")
-            feed = feedparser.parse(podcast.rss_url)
+            
+            # Fetch RSS content with httpx for better encoding handling
+            feed_content = self._fetch_rss_content(podcast.rss_url)
+            if not feed_content:
+                logger.error(f"Could not fetch RSS content for {podcast.name}")
+                return None
+            
+            # Parse the fetched content
+            feed = feedparser.parse(feed_content)
             
             if feed.bozo and feed.bozo_exception:
                 logger.warning(f"RSS parsing warning for {podcast.name}: {feed.bozo_exception}")
@@ -58,6 +70,48 @@ class RSSParser:
             logger.error(f"Error fetching RSS feed for {podcast.name}: {e}")
             return None
     
+    def _fetch_rss_content(self, url: str) -> Optional[str]:
+        """
+        Fetch RSS content with explicit encoding handling.
+        
+        Args:
+            url: RSS feed URL
+        
+        Returns:
+            RSS content as string, or None if failed
+        """
+        try:
+            with httpx.Client(timeout=30.0, follow_redirects=True) as client:
+                response = client.get(url, headers={"User-Agent": USER_AGENT})
+                response.raise_for_status()
+                
+                # Try to decode with UTF-8, falling back to latin-1
+                try:
+                    content = response.content.decode('utf-8')
+                except UnicodeDecodeError:
+                    logger.warning(f"UTF-8 decode failed, trying latin-1 for {url}")
+                    content = response.content.decode('latin-1')
+                
+                # Replace problematic characters that can cause XML parsing issues
+                # Em dash, en dash, smart quotes, etc.
+                replacements = {
+                    '\u2014': '-',  # em dash
+                    '\u2013': '-',  # en dash
+                    '\u2018': "'",  # left single quote
+                    '\u2019': "'",  # right single quote
+                    '\u201c': '"',  # left double quote
+                    '\u201d': '"',  # right double quote
+                    '\u2026': '...',  # ellipsis
+                }
+                for old, new in replacements.items():
+                    content = content.replace(old, new)
+                
+                return content
+                
+        except Exception as e:
+            logger.error(f"Error fetching RSS content from {url}: {e}")
+            return None
+    
     def fetch_recent_episodes(self, podcast: PodcastConfig, count: int = 5) -> list[Episode]:
         """
         Fetch recent episodes from a podcast's RSS feed.
@@ -71,7 +125,14 @@ class RSSParser:
         """
         try:
             logger.info(f"Fetching RSS feed for {podcast.name}")
-            feed = feedparser.parse(podcast.rss_url)
+            
+            # Fetch RSS content with httpx for better encoding handling
+            feed_content = self._fetch_rss_content(podcast.rss_url)
+            if not feed_content:
+                logger.error(f"Could not fetch RSS content for {podcast.name}")
+                return []
+            
+            feed = feedparser.parse(feed_content)
             
             if not feed.entries:
                 logger.warning(f"No entries found in RSS feed for {podcast.name}")
