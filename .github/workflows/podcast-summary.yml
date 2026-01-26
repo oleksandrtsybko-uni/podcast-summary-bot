@@ -19,6 +19,9 @@ on:
 env:
   PYTHON_VERSION: '3.11'
 
+permissions:
+  contents: write
+
 jobs:
   check-podcasts:
     name: Check for New Episodes
@@ -35,6 +38,11 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
+      
+      - name: Install system dependencies (ffmpeg for audio processing)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
       
       - name: Install dependencies
         run: |
