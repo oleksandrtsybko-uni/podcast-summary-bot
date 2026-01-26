@@ -17,8 +17,8 @@ from ..utils.helpers import clean_html, extract_linkedin_urls, extract_guest_nam
 
 logger = get_logger(__name__)
 
-# Custom User-Agent to avoid being blocked
-USER_AGENT = "PodcastSummaryBot/1.0 (https://github.com/oleksandrtsybko-uni/podcast-summary-bot)"
+# Custom User-Agent - mimics a podcast app to avoid being blocked
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 
 class RSSParser:

@@ -220,14 +220,38 @@ class SubClubTranscriptStrategy(TranscriptStrategy):
             return None
     
     def _titles_match(self, title1: str, title2: str) -> bool:
-        """Fuzzy title matching."""
-        if title1 == title2:
+        """Fuzzy title matching with normalization."""
+        # Normalize both titles - replace special characters
+        def normalize(s):
+            s = s.lower()
+            # Replace various dashes with standard hyphen
+            s = s.replace('–', '-').replace('—', '-').replace('−', '-')
+            # Replace smart quotes
+            s = s.replace(''', "'").replace(''', "'").replace('"', '"').replace('"', '"')
+            # Remove extra whitespace
+            s = ' '.join(s.split())
+            return s
+        
+        t1 = normalize(title1)
+        t2 = normalize(title2)
+        
+        if t1 == t2:
             return True
-        if title1 in title2 or title2 in title1:
+        if t1 in t2 or t2 in t1:
             return True
-        words1 = title1.split()[:5]
-        words2 = title2.split()[:5]
-        return words1 == words2
+        
+        # Compare first 5 words
+        words1 = t1.split()[:5]
+        words2 = t2.split()[:5]
+        if words1 == words2:
+            return True
+        
+        # Check if first 3 significant words match (skip common words)
+        skip_words = {'the', 'a', 'an', 'and', 'or', 'with', 'by', 'for', 'to', 'of', 'in', 'on'}
+        sig_words1 = [w for w in t1.split() if w not in skip_words][:3]
+        sig_words2 = [w for w in t2.split() if w not in skip_words][:3]
+        
+        return sig_words1 == sig_words2
     
     def _clean_transcript(self, text: str) -> str:
         """Clean transcript text."""
