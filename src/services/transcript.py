@@ -424,7 +424,8 @@ class LennysTranscriptStrategy(TranscriptStrategy):
     ) -> Optional[Episode]:
         """
         Enrich episode metadata from Apple Podcasts.
-        Gets the latest episode and extracts full title, date, description, and guest links.
+        Gets the latest episode and extracts: clean title, date, and LinkedIn URL.
+        Does NOT include full description (we only need title, date, guest link).
         
         Args:
             episode: Basic episode from Dropbox
@@ -453,36 +454,40 @@ class LennysTranscriptStrategy(TranscriptStrategy):
             
             first_episode_link = episode_links[0]
             
-            # Get episode title from the link
-            apple_title = first_episode_link.text_content()
-            if apple_title:
-                apple_title = apple_title.strip()
-            
             # Get episode URL
             episode_url = first_episode_link.get_attribute('href')
             if episode_url and not episode_url.startswith('http'):
                 episode_url = f"https://podcasts.apple.com{episode_url}"
             
-            # Sanity check: verify guest name appears in title
-            if guest_name and apple_title:
-                guest_name_lower = guest_name.lower()
-                apple_title_lower = apple_title.lower()
-                # Check if any part of guest name appears in title
-                guest_parts = guest_name_lower.split()
-                matches = sum(1 for part in guest_parts if part in apple_title_lower)
-                if matches < len(guest_parts) // 2 + 1:
-                    logger.warning(f"Guest name mismatch! Dropbox: '{guest_name}', Apple title: '{apple_title}'")
-                    logger.warning("Possible timing sync issue - Dropbox may have newer content")
-            
-            # Navigate to episode page to get more details
+            # Navigate to episode page to get clean title and details
+            apple_title = None
             published_date = None
-            description = ""
-            guest_link = episode_url  # Default to episode URL as guest link
+            linkedin_url = None
             
             if episode_url:
                 try:
                     browser.goto(episode_url, wait_until="networkidle", timeout=20000)
                     browser.wait_for_timeout(2000)
+                    
+                    # Extract clean episode title from the page header (not the link text)
+                    title_selectors = [
+                        'h1[class*="headings"]',
+                        'h1[class*="title"]',
+                        'h1',
+                        '[data-testid="episode-title"]',
+                    ]
+                    for selector in title_selectors:
+                        try:
+                            title_elem = browser.locator(selector).first
+                            if title_elem.count() > 0:
+                                title_text = title_elem.text_content()
+                                if title_text and len(title_text) > 10:
+                                    apple_title = title_text.strip()
+                                    # Remove any leading date indicators like "2D AGO"
+                                    apple_title = re.sub(r'^\d+[DHM]\s+AGO\s+', '', apple_title, flags=re.IGNORECASE)
+                                    break
+                        except Exception:
+                            continue
                     
                     # Extract published date
                     date_elem = browser.locator('time, [datetime]').first
@@ -491,50 +496,53 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                         if date_str:
                             published_date = self._parse_apple_date(date_str.strip())
                     
-                    # Extract description
+                    # Extract LinkedIn URL from description (we only want the URL, not the text)
                     desc_selectors = [
                         '[data-testid="description"]',
-                        '.product-hero-desc p',
+                        '.product-hero-desc',
                         'section[class*="description"]',
-                        '.episode-description'
                     ]
                     for selector in desc_selectors:
                         try:
                             desc_elem = browser.locator(selector).first
                             if desc_elem.count() > 0:
-                                description = desc_elem.text_content() or ""
-                                if len(description) > 50:
+                                desc_text = desc_elem.text_content() or ""
+                                # Only extract LinkedIn URL
+                                linkedin_match = re.search(r'https?://(?:www\.)?linkedin\.com/in/[a-zA-Z0-9_-]+', desc_text)
+                                if linkedin_match:
+                                    linkedin_url = linkedin_match.group(0)
+                                    logger.info(f"Found LinkedIn URL: {linkedin_url}")
                                     break
                         except Exception:
                             continue
                     
-                    # Try to extract LinkedIn URL from description
-                    if description:
-                        linkedin_match = re.search(r'https?://(?:www\.)?linkedin\.com/in/[a-zA-Z0-9_-]+', description)
-                        if linkedin_match:
-                            guest_link = linkedin_match.group(0)
-                            logger.info(f"Found LinkedIn URL in description: {guest_link}")
-                    
                 except Exception as e:
                     logger.debug(f"Could not get episode details: {e}")
             
-            # Create enriched episode
-            # Extract guest name from Apple title if available (more accurate)
+            # Sanity check: verify guest name appears in title
+            if guest_name and apple_title:
+                guest_name_lower = guest_name.lower()
+                apple_title_lower = apple_title.lower()
+                guest_parts = guest_name_lower.split()
+                matches = sum(1 for part in guest_parts if part in apple_title_lower)
+                if matches < len(guest_parts) // 2 + 1:
+                    logger.warning(f"Guest name mismatch! Dropbox: '{guest_name}', Apple title: '{apple_title}'")
+            
+            # Create enriched episode with clean data
             enriched_guests = episode.guests
-            if enriched_guests and guest_link:
-                # Update guest with link
+            if enriched_guests:
+                # Update guest with LinkedIn URL if found
                 enriched_guests = [Guest(
                     name=enriched_guests[0].name,
-                    linkedin_url=guest_link if 'linkedin.com' in guest_link else None,
+                    linkedin_url=linkedin_url,  # Will be None if not found
                     description=None
                 )]
-                # If no LinkedIn, we'll use apple_podcasts_url for the guest link in telegram.py
             
             return Episode(
                 guid=episode.guid,
                 podcast_id=episode.podcast_id,
                 title=apple_title or episode.title,
-                description=description or episode.description,
+                description="",  # Don't include description - we only need title/date/guest
                 published_date=published_date or episode.published_date,
                 episode_url=episode_url or episode.episode_url,
                 audio_url=episode.audio_url,
