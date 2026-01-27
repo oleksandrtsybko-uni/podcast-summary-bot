@@ -489,12 +489,48 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                         except Exception:
                             continue
                     
-                    # Extract published date
-                    date_elem = browser.locator('time, [datetime]').first
-                    if date_elem.count() > 0:
-                        date_str = date_elem.get_attribute('datetime') or date_elem.text_content()
-                        if date_str:
-                            published_date = self._parse_apple_date(date_str.strip())
+                    # Extract published date - try multiple selectors
+                    date_selectors = [
+                        'time[datetime]',
+                        'time',
+                        '[datetime]',
+                        '.episode-date',
+                        '[class*="date"]',
+                        '[class*="Date"]',
+                    ]
+                    for selector in date_selectors:
+                        try:
+                            date_elem = browser.locator(selector).first
+                            if date_elem.count() > 0:
+                                date_str = date_elem.get_attribute('datetime') or date_elem.text_content()
+                                if date_str:
+                                    parsed = self._parse_apple_date(date_str.strip())
+                                    if parsed:
+                                        published_date = parsed
+                                        logger.info(f"Found date: {published_date}")
+                                        break
+                        except Exception:
+                            continue
+                    
+                    # Fallback: look for date pattern in page text
+                    if not published_date:
+                        try:
+                            # Apple sometimes shows dates like "JAN 25, 2026" near the episode info
+                            page_text = browser.locator('main').first.text_content() or ""
+                            # Look for date patterns
+                            date_patterns = [
+                                r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}',
+                                r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{1,2},?\s+\d{4}',
+                            ]
+                            for pattern in date_patterns:
+                                match = re.search(pattern, page_text, re.IGNORECASE)
+                                if match:
+                                    published_date = self._parse_apple_date(match.group(0))
+                                    if published_date:
+                                        logger.info(f"Found date from pattern: {published_date}")
+                                        break
+                        except Exception:
+                            pass
                     
                     # Extract LinkedIn URL from description (we only want the URL, not the text)
                     desc_selectors = [
@@ -565,13 +601,25 @@ class LennysTranscriptStrategy(TranscriptStrategy):
             "%Y-%m-%dT%H:%M:%SZ",
             "%Y-%m-%dT%H:%M:%S",
             "%Y-%m-%d",
-            "%B %d, %Y",
-            "%b %d, %Y",
+            "%B %d, %Y",      # January 25, 2026
+            "%B %d %Y",       # January 25 2026
+            "%b %d, %Y",      # Jan 25, 2026
+            "%b %d %Y",       # Jan 25 2026
+            "%d %B %Y",       # 25 January 2026
+            "%d %b %Y",       # 25 Jan 2026
+            "%B %d",          # January 25 (assume current year)
+            "%b %d",          # Jan 25 (assume current year)
         ]
+        
+        date_str = date_str.strip()
         
         for fmt in formats:
             try:
-                return datetime.strptime(date_str.strip(), fmt)
+                parsed = datetime.strptime(date_str, fmt)
+                # If no year in format, use current year
+                if parsed.year == 1900:
+                    parsed = parsed.replace(year=datetime.now().year)
+                return parsed
             except ValueError:
                 continue
         
