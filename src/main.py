@@ -351,6 +351,13 @@ class PodcastSummaryBot:
                 
                 if success:
                     logger.info("✅ Successfully sent summary to Telegram")
+                    # Update tracker with filename as the identifier
+                    self.tracker.update_last_episode(
+                        podcast_id=podcast.id,
+                        guid=result.filename,
+                        title=episode.title,
+                        published_date=episode.published_date,
+                    )
                 else:
                     logger.error("❌ Failed to send to Telegram")
                 
@@ -377,7 +384,18 @@ class PodcastSummaryBot:
             logger.error(f"Could not fetch episode for {podcast.name}")
             return False
         
-        return self._process_new_episode(episode, podcast)
+        success = self._process_new_episode(episode, podcast)
+        
+        # Update tracker after successful processing
+        if success:
+            self.tracker.update_last_episode(
+                podcast_id=podcast.id,
+                guid=episode.guid,
+                title=episode.title,
+                published_date=episode.published_date,
+            )
+        
+        return success
 
 
 def main():
