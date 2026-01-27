@@ -1,1 +1,20 @@
-{}
+{
+  "lennys-podcast": {
+    "guid": "Jason Cohen.txt",
+    "title": "5 questions to ask when your product stops growing | Jason Cohen (2x unicorn founder)",
+    "published_date": "2026-01-25T00:00:00",
+    "processed_at": "2026-01-27T14:27:07.994180"
+  },
+  "sub-club": {
+    "guid": "f42af156-4505-458f-a513-7df539335cc6",
+    "title": "Why Your Free Users Are Your Real Growth Engine - Cem Kansu, Duolingo CPO",
+    "published_date": "2026-01-21T09:00:00",
+    "processed_at": "2026-01-27T14:27:29.825183"
+  },
+  "20vc": {
+    "guid": "ff80f94a-2267-44fc-b2de-c47f65605970",
+    "title": "20VC: From Only OpenAI to Die-Hard Anthropic: The Downfall of OpenAI in Enterprise | Harvey vs Legora: Legal AI is a Winner Take All | $7M ARR in a Single Day and Raising $200M Across 3 Rounds with No Deck with Max Junestrand, CEO @ Legora",
+    "published_date": "2026-01-26T14:19:00",
+    "processed_at": "2026-01-27T14:31:39.202833"
+  }
+}
