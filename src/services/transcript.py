@@ -7,19 +7,29 @@ import re
 import os
 import tempfile
 from abc import ABC, abstractmethod
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Tuple
 from pathlib import Path
+from datetime import datetime
 
 import httpx
 from playwright.sync_api import sync_playwright, Page, TimeoutError as PlaywrightTimeoutError
 from openai import OpenAI
 
-from ..models.episode import Episode
+from ..models.episode import Episode, Guest
 from ..config.podcasts import PodcastConfig
 from ..config.settings import get_settings
 from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class DropboxEpisodeResult:
+    """Result from Dropbox-based episode detection."""
+    episode: Episode
+    transcript: str
+    filename: str  # Used for tracking (instead of GUID)
 
 # Lenny's Podcast Dropbox archive URL
 LENNYS_DROPBOX_URL = "https://www.dropbox.com/scl/fo/yxi4s2w998p1gvtpu4193/AMdNPR8AOw0lMklwtnC0TrQ?rlkey=j06x0nipoti519e0xgm23zsn9&e=1&st=ahz0fj11&dl=0"
@@ -309,6 +319,123 @@ class LennysTranscriptStrategy(TranscriptStrategy):
             logger.error(f"Error fetching Lenny's transcript: {e}")
             return None
     
+    def detect_and_fetch_latest(
+        self,
+        podcast: PodcastConfig,
+        browser: Page
+    ) -> Optional[DropboxEpisodeResult]:
+        """
+        Detect the latest episode from Dropbox and fetch its transcript in one step.
+        Used for episode detection when RSS/Apple Podcasts are blocked.
+        
+        Args:
+            podcast: Podcast configuration
+            browser: Playwright Page instance
+        
+        Returns:
+            DropboxEpisodeResult with episode, transcript, and filename if found
+        """
+        try:
+            logger.info(f"Detecting latest Lenny's episode from Dropbox archive...")
+            
+            # Navigate to Dropbox folder
+            browser.goto(LENNYS_DROPBOX_URL, wait_until="networkidle", timeout=60000)
+            browser.wait_for_timeout(5000)  # Wait for files to load
+            
+            # Sort by Modified date (newest first)
+            try:
+                modified_button = browser.locator('button:has-text("Modified")').first
+                if modified_button.count() > 0:
+                    # Click twice to ensure descending order (newest first)
+                    modified_button.click()
+                    browser.wait_for_timeout(1500)
+                    # Check if we need to click again for descending
+                    modified_button.click()
+                    browser.wait_for_timeout(2000)
+                    logger.info("Sorted Dropbox files by Modified date (newest first)")
+            except Exception as e:
+                logger.warning(f"Could not sort by modified date: {e}")
+            
+            # Get files from Dropbox
+            files = self._list_dropbox_files(browser)
+            if not files:
+                logger.warning("No files found in Dropbox folder")
+                return None
+            
+            # Get the first file (should be newest after sorting)
+            newest_file = files[0]
+            logger.info(f"Newest file in Dropbox: {newest_file['name']}")
+            
+            # Extract guest name from filename
+            guest_name = self._extract_guest_from_filename(newest_file['name'])
+            if not guest_name:
+                logger.warning(f"Could not extract guest name from filename: {newest_file['name']}")
+                guest_name = Path(newest_file['name']).stem  # Use filename without extension
+            
+            logger.info(f"Detected guest: {guest_name}")
+            
+            # Download the transcript
+            transcript = self._download_and_parse_file(browser, newest_file)
+            if not transcript:
+                logger.error(f"Failed to download transcript for: {newest_file['name']}")
+                return None
+            
+            logger.info(f"Successfully downloaded transcript ({len(transcript)} chars)")
+            
+            # Create Episode object from Dropbox file info
+            episode = Episode(
+                guid=f"dropbox-{newest_file['name']}",  # Unique identifier based on filename
+                podcast_id=podcast.id,
+                title=f"Lenny's Podcast | {guest_name}",  # Construct title from guest name
+                description="",  # No description available from Dropbox
+                published_date=newest_file.get('modified_date'),  # Use file modified date if available
+                episode_url=podcast.website,  # Link to podcast website
+                audio_url=None,
+                apple_podcasts_url=podcast.apple_podcasts_url,
+                guests=[Guest(name=guest_name)],
+                duration=None,
+            )
+            
+            return DropboxEpisodeResult(
+                episode=episode,
+                transcript=transcript,
+                filename=newest_file['name']
+            )
+            
+        except Exception as e:
+            logger.error(f"Error detecting latest episode from Dropbox: {e}")
+            return None
+    
+    def _extract_guest_from_filename(self, filename: str) -> Optional[str]:
+        """Extract guest name from Dropbox filename."""
+        # Remove file extension
+        name = Path(filename).stem
+        
+        # Common patterns in Lenny's transcript filenames:
+        # - "Guest Name.txt"
+        # - "Guest Name - Topic.txt"
+        # - "Lenny's Podcast - Guest Name.txt"
+        
+        # Remove common prefixes
+        prefixes_to_remove = ["Lenny's Podcast - ", "Lennys Podcast - ", "LP - "]
+        for prefix in prefixes_to_remove:
+            if name.startswith(prefix):
+                name = name[len(prefix):]
+        
+        # If there's a dash, take the part that looks like a name (usually first part)
+        if " - " in name:
+            parts = name.split(" - ")
+            # Usually the guest name is the first or second part
+            for part in parts:
+                # A name typically has 2-4 words
+                words = part.strip().split()
+                if 1 <= len(words) <= 5 and all(w[0].isupper() for w in words if w):
+                    return part.strip()
+            # Fallback to first part
+            name = parts[0]
+        
+        return name.strip() if name.strip() else None
+    
     def _extract_guest_name(self, episode: Episode) -> Optional[str]:
         """Extract guest name from episode."""
         if episode.guests:
@@ -330,26 +457,20 @@ class LennysTranscriptStrategy(TranscriptStrategy):
         return None
     
     def _list_dropbox_files(self, page: Page) -> list[dict]:
-        """List files in Dropbox folder."""
+        """List files in Dropbox folder with modified dates."""
         files = []
         try:
-            # First, try to sort by Modified date (newest first) by clicking the Modified header twice
-            try:
-                modified_button = page.locator('button:has-text("Modified")').first
-                if modified_button.count() > 0:
-                    modified_button.click()
-                    page.wait_for_timeout(1000)
-                    modified_button.click()  # Click again for descending order
-                    page.wait_for_timeout(2000)
-            except Exception as e:
-                logger.debug(f"Could not sort by modified: {e}")
+            # Dropbox uses a table structure - find all rows
+            # Each row contains: filename link, modified date, etc.
+            file_rows = page.locator('table tbody tr').all()
             
-            # Dropbox uses a table structure - find all links in table cells
-            # The URL pattern is: https://www.dropbox.com/scl/fo/.../filename.txt?rlkey=...
-            file_links = page.locator('table a[href*=".txt"]').all()
-            
-            for link in file_links:
+            for row in file_rows:
                 try:
+                    # Get the file link
+                    link = row.locator('a[href*=".txt"]').first
+                    if link.count() == 0:
+                        continue
+                    
                     # Get the file name from the button inside the link
                     button = link.locator('button').first
                     if button.count() > 0:
@@ -359,35 +480,75 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                     
                     href = link.get_attribute('href')
                     
-                    if file_name and href and '.txt' in href:
-                        # Clean the file name
-                        clean_name = file_name.strip()
-                        if clean_name:
-                            files.append({
-                                'name': clean_name,
-                                'url': href if href.startswith('http') else f"https://www.dropbox.com{href}"
-                            })
+                    if not file_name or not href or '.txt' not in href:
+                        continue
+                    
+                    # Clean the file name
+                    clean_name = file_name.strip()
+                    if not clean_name:
+                        continue
+                    
+                    # Try to get modified date from the row
+                    modified_date = None
+                    try:
+                        # Dropbox shows modified date in a cell, look for time element or date text
+                        date_cell = row.locator('td').nth(1)  # Usually second column
+                        if date_cell.count() > 0:
+                            date_text = date_cell.text_content()
+                            if date_text:
+                                modified_date = self._parse_dropbox_date(date_text.strip())
+                    except Exception:
+                        pass
+                    
+                    files.append({
+                        'name': clean_name,
+                        'url': href if href.startswith('http') else f"https://www.dropbox.com{href}",
+                        'modified_date': modified_date
+                    })
                 except Exception:
                     continue
             
-            # Fallback: try to find links with scl/fo pattern (Dropbox shared link format)
+            # Fallback: try original method if table rows didn't work
+            if not files:
+                file_links = page.locator('table a[href*=".txt"]').all()
+                for link in file_links:
+                    try:
+                        button = link.locator('button').first
+                        if button.count() > 0:
+                            file_name = button.text_content()
+                        else:
+                            file_name = link.text_content()
+                        
+                        href = link.get_attribute('href')
+                        
+                        if file_name and href and '.txt' in href:
+                            clean_name = file_name.strip()
+                            if clean_name:
+                                files.append({
+                                    'name': clean_name,
+                                    'url': href if href.startswith('http') else f"https://www.dropbox.com{href}",
+                                    'modified_date': None
+                                })
+                    except Exception:
+                        continue
+            
+            # Second fallback: try to find links with scl/fo pattern
             if not files:
                 file_links = page.locator('a[href*="/scl/fo/"]').all()
                 for link in file_links:
                     try:
                         href = link.get_attribute('href')
                         if href and '.txt' in href:
-                            # Extract filename from URL
                             import urllib.parse
                             parsed = urllib.parse.urlparse(href)
                             path_parts = parsed.path.split('/')
-                            # Find the .txt file in path
                             for part in path_parts:
                                 if '.txt' in part:
                                     file_name = urllib.parse.unquote(part)
                                     files.append({
                                         'name': file_name,
-                                        'url': href if href.startswith('http') else f"https://www.dropbox.com{href}"
+                                        'url': href if href.startswith('http') else f"https://www.dropbox.com{href}",
+                                        'modified_date': None
                                     })
                                     break
                     except Exception:
@@ -398,6 +559,46 @@ class LennysTranscriptStrategy(TranscriptStrategy):
         except Exception as e:
             logger.error(f"Error listing Dropbox files: {e}")
             return []
+    
+    def _parse_dropbox_date(self, date_str: str) -> Optional[datetime]:
+        """Parse date string from Dropbox modified column."""
+        if not date_str:
+            return None
+        
+        # Dropbox uses formats like:
+        # - "Jan 15, 2026"
+        # - "Yesterday"
+        # - "Today"
+        # - "Jan 15"
+        
+        date_str = date_str.strip()
+        
+        # Handle relative dates
+        if date_str.lower() == 'today':
+            return datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        if date_str.lower() == 'yesterday':
+            from datetime import timedelta
+            return (datetime.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Try various date formats
+        formats = [
+            "%b %d, %Y",  # Jan 15, 2026
+            "%B %d, %Y",  # January 15, 2026
+            "%b %d",      # Jan 15 (assume current year)
+            "%Y-%m-%d",   # 2026-01-15
+        ]
+        
+        for fmt in formats:
+            try:
+                parsed = datetime.strptime(date_str, fmt)
+                # If no year in format, use current year
+                if parsed.year == 1900:
+                    parsed = parsed.replace(year=datetime.now().year)
+                return parsed
+            except ValueError:
+                continue
+        
+        return None
     
     def _find_matching_file(self, files: list[dict], guest_name: str) -> Optional[dict]:
         """Find file that matches guest name (fuzzy matching)."""

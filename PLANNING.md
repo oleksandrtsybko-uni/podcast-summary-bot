@@ -67,15 +67,17 @@ src/
 
 1. **Trigger**: GitHub Actions cron triggers `main.py`
 2. **Load State**: Read `last_episodes.json` for previously processed episodes
-3. **Fetch Feeds**: Parse RSS feeds for all configured podcasts
-4. **Detect New**: Compare latest episodes against stored IDs
+3. **Fetch Feeds**: 
+   - **Standard podcasts**: Parse RSS feeds
+   - **Lenny's Podcast**: Check Dropbox for newest `.txt` file (returns episode + transcript together)
+4. **Detect New**: Compare latest episodes against stored IDs (or filenames for Dropbox-sourced podcasts)
 5. **Process New Episodes**:
    - Extract metadata (title, guests, description)
-   - Attempt transcript acquisition
+   - Attempt transcript acquisition (skipped for Lenny's - already have it from Dropbox)
    - Generate AI summary
    - Format Telegram message
 6. **Deliver**: Send to Telegram
-7. **Update State**: Write new episode IDs to `last_episodes.json`
+7. **Update State**: Write new episode IDs/filenames to `last_episodes.json`
 8. **Commit**: GitHub Actions commits updated state file
 
 ---
@@ -134,15 +136,15 @@ src/
 
 ---
 
-## 📡 Podcast RSS Feed Sources
+## 📡 Podcast Feed Sources & Detection Methods
 
-| Podcast | RSS Feed URL | Transcript Method |
-|---------|--------------|-------------------|
-| Lenny's Podcast | `https://api.substack.com/feed/podcast/10845.rss` | Dropbox Archive (match by guest name) |
-| Sub Club | `https://feeds.transistor.fm/sub-club` | Apple Podcasts Episode Highlights |
-| 20VC | `https://thetwentyminutevc.libsyn.com/rss` | Whisper AI (audio transcription with chunking) |
+| Podcast | Episode Detection | RSS/Source URL | Transcript Method |
+|---------|-------------------|----------------|-------------------|
+| Lenny's Podcast | Dropbox Archive (newest file) | N/A - Uses Dropbox directly | Dropbox Archive (same file as detection) |
+| Sub Club | RSS Feed | `https://feeds.transistor.fm/sub-club` | Apple Podcasts Episode Highlights |
+| 20VC | RSS Feed | `https://thetwentyminutevc.libsyn.com/rss` | Whisper AI (audio transcription with chunking) |
 
-*Note: RSS URLs verified and working as of January 2026. Sub Club RSS corrected from simplecast to transistor.fm.*
+*Note: Lenny's Podcast uses Dropbox archive for BOTH episode detection AND transcript acquisition. The newest `.txt` file (by modified date) is used. This eliminates both Substack RSS (403 errors) and Apple Podcasts scraping dependencies. Sub Club RSS corrected from simplecast to transistor.fm.*
 
 ---
 

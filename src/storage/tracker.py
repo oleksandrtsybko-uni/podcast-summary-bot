@@ -1,6 +1,10 @@
 """
 Episode tracking storage - tracks last processed episodes per podcast.
 Uses a simple JSON file for persistence.
+
+Note: The 'guid' field is used as a unique identifier for episodes.
+- For RSS-sourced episodes: this is the episode GUID from the RSS feed
+- For Dropbox-sourced episodes (Lenny's): this is the filename from Dropbox
 """
 
 import json
@@ -95,7 +99,7 @@ class EpisodeTracker:
         
         Args:
             podcast_id: Unique identifier for the podcast
-            guid: Episode GUID from RSS
+            guid: Episode identifier (RSS GUID or Dropbox filename for Lenny's)
             title: Episode title
             published_date: Episode publication date
         """

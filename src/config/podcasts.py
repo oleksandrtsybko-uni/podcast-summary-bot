@@ -15,6 +15,8 @@ class PodcastConfig:
     apple_podcasts_url: Optional[str] = None
     website: Optional[str] = None
     category: Optional[str] = None
+    use_apple_for_detection: bool = False  # Use Apple Podcasts instead of RSS for episode detection
+    use_dropbox_for_detection: bool = False  # Use Dropbox archive for both episode detection AND transcript (Lenny's only)
 
 
 # List of podcasts to monitor
@@ -22,10 +24,11 @@ PODCASTS: list[PodcastConfig] = [
     PodcastConfig(
         id="lennys-podcast",
         name="Lenny's Podcast",
-        rss_url="https://api.substack.com/feed/podcast/10845.rss",
+        rss_url="https://api.substack.com/feed/podcast/10845.rss",  # Kept as fallback reference, but not used
         apple_podcasts_url="https://podcasts.apple.com/us/podcast/lennys-podcast-product-growth-career/id1627920305",
         website="https://www.lennysnewsletter.com/podcast",
-        category="Product Management"
+        category="Product Management",
+        use_dropbox_for_detection=True  # Use Dropbox archive for both episode detection AND transcript
     ),
     PodcastConfig(
         id="sub-club",

@@ -2,7 +2,7 @@
 
 > **Instructions**: Check off tasks as completed. Add new tasks as discovered.
 
-**Latest Update (v1.2):** Fixed Sub Club RSS feed URL, added audio chunking for large files, updated summary prompt format, replaced async Telegram with direct HTTP, removed description fallback.
+**Latest Update (v1.4):** Replaced Apple Podcasts scraping with Dropbox-only approach for Lenny's Podcast - uses Dropbox for both episode detection AND transcript (single source of truth).
 
 ---
 
@@ -163,10 +163,37 @@
 - [x] Update summary prompt to structured bullet-point format
 - [x] Increase transcript character limit to 100,000
 - [x] Remove description summary fallback completely
+- [x] Fix Lenny's Podcast RSS 403 error by using Apple Podcasts scraping for episode detection
+- [x] Add `use_apple_for_detection` flag to PodcastConfig
+- [x] Implement `fetch_latest_episode_from_apple()` method in rss_parser.py
+- [x] Update Telegram delivery to use channel instead of personal chat
+- [x] Replace Apple Podcasts scraping with Dropbox-only approach for Lenny's Podcast (v1.4)
+- [x] Add `use_dropbox_for_detection` flag to PodcastConfig
+- [x] Implement `detect_and_fetch_latest()` method in LennysTranscriptStrategy
+- [x] Add `fetch_latest_episode_from_dropbox()` method to RSSParser
+- [x] Update main.py to use Dropbox detection flow when flag is set
+- [x] Update episode tracker to track by filename for Dropbox-sourced episodes
 
 ---
 
 ## Completed Tasks ✅
+
+### Dropbox-Only Episode Detection for Lenny's (v1.4)
+- [x] Replaced Apple Podcasts scraping with Dropbox-only approach for Lenny's Podcast
+- [x] Added `use_dropbox_for_detection` config flag to PodcastConfig
+- [x] Implemented `detect_and_fetch_latest()` method in LennysTranscriptStrategy - returns episode + transcript in one step
+- [x] Added `DropboxEpisodeResult` dataclass to hold episode, transcript, and filename
+- [x] Added `fetch_latest_episode_from_dropbox()` method to RSSParser
+- [x] Updated main.py with `_process_podcast_via_dropbox()` method for Dropbox flow
+- [x] Episode tracker now uses filename (instead of GUID) for Dropbox-sourced episodes
+- [x] Updated PRD.md, PLANNING.md, and TASKS.md with v1.4 changes
+
+### Lenny's RSS Fix & Telegram Channel (v1.3)
+- [x] Substack RSS returns 403 Forbidden on GitHub Actions - implemented Apple Podcasts scraping fallback for Lenny's Podcast
+- [x] Added `use_apple_for_detection` config option for podcasts where RSS is blocked
+- [x] RSSParser now supports scraping Apple Podcasts show page for episode detection via `fetch_latest_episode_from_apple()`
+- [x] Updated Telegram delivery to use channel ID for sharing with multiple users
+- [x] Updated PRD.md, PLANNING.md, and TASKS.md with v1.3 changes
 
 ### Bug Fixes & Improvements (v1.2)
 - [x] Fixed Sub Club RSS feed URL (changed from `feeds.simplecast.com/4MvgQ73R` to `feeds.transistor.fm/sub-club`)

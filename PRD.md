@@ -8,8 +8,8 @@
 ## 1. Executive Summary
 
 **Project Name:** Podcast Summary Bot  
-**Version:** 1.2  
-**Last Updated:** January 22, 2026
+**Version:** 1.4  
+**Last Updated:** January 27, 2026
 
 A lightweight automation bot that monitors specific Apple Podcasts shows weekly, detects new episodes, generates AI-powered summaries from transcripts, and delivers structured briefings via Telegram. Designed for busy professionals who want to stay informed about key podcast content without listening to full episodes.
 
@@ -37,13 +37,13 @@ An automated bot that runs weekly (Thursdays) to:
 
 ## 4. Target Podcasts
 
-| # | Podcast Name | Focus Area | Transcript Method |
-|---|--------------|------------|-------------------|
-| 1 | Lenny's Podcast: Product \| Career \| Growth | Product Management | Dropbox Archive (match by guest name) |
-| 2 | Sub Club by RevenueCat | Mobile App Monetization | Apple Podcasts Episode Highlights |
-| 3 | The Twenty Minute VC (20VC) | Venture Capital | Whisper AI Transcription |
+| # | Podcast Name | Focus Area | Episode Detection | Transcript Method |
+|---|--------------|------------|-------------------|-------------------|
+| 1 | Lenny's Podcast: Product \| Career \| Growth | Product Management | Dropbox Archive (newest file) | Dropbox Archive (same file) |
+| 2 | Sub Club by RevenueCat | Mobile App Monetization | RSS Feed | Apple Podcasts Episode Highlights |
+| 3 | The Twenty Minute VC (20VC) | Venture Capital | RSS Feed | Whisper AI Transcription |
 
-**Note:** Lightcone Podcast was removed from monitoring.
+**Note:** Lightcone Podcast was removed from monitoring. Lenny's Podcast uses Dropbox for both episode detection AND transcript (single source of truth).
 
 ---
 
@@ -52,8 +52,9 @@ An automated bot that runs weekly (Thursdays) to:
 ### 5.1 Episode Detection (FR-001)
 - **Requirement:** System shall check RSS feeds of all target podcasts for new episodes
 - **Frequency:** Weekly (configurable, default: Thursdays)
-- **Storage:** Minimal - store only last processed episode ID per podcast
+- **Storage:** Minimal - store only last processed episode ID per podcast (or filename for Dropbox-sourced podcasts)
 - **Comparison:** Compare latest RSS entry against stored episode ID
+- **Dropbox Detection:** For Lenny's Podcast, Dropbox archive is used for both episode detection AND transcript acquisition. The newest `.txt` file (sorted by modified date) determines the latest episode. This eliminates both RSS (Substack 403 errors) and Apple Podcasts scraping dependencies.
 
 ### 5.2 Metadata Extraction (FR-002)
 - **Requirement:** Extract the following from new episodes:
@@ -75,7 +76,7 @@ An automated bot that runs weekly (Thursdays) to:
 - **Requirement:** Obtain episode transcript using podcast-specific methods
 - **Sources:** 
   - **Sub Club**: Scrape from Apple Podcasts episode page "Episode Highlights" section
-  - **Lenny's Podcast**: Download from Dropbox archive (match by guest name)
+  - **Lenny's Podcast**: Download from Dropbox archive (newest file by modified date - same file used for episode detection)
   - **20VC**: Transcribe audio using OpenAI Whisper API (with chunking for files >25MB)
 - **Handling:** If transcript acquisition fails, set transcript to "Transcript not found" (no description fallback)
 - **Character Limit:** 100,000 characters max for summarization (~25k tokens)
@@ -173,7 +174,9 @@ An automated bot that runs weekly (Thursdays) to:
 | Constraint | Mitigation |
 |------------|------------|
 | No official Apple Podcasts API | Use RSS feeds (reliable, public) |
-| Transcript scraping may fail | Fallback to description-based summary |
+| Substack RSS blocks GitHub Actions IPs | Use Dropbox archive for Lenny's (single source for detection + transcript) |
+| Apple Podcasts scraping unreliable | Eliminated for Lenny's - use Dropbox instead |
+| Transcript scraping may fail | Set transcript to "Transcript not found" |
 | LinkedIn links not always in description | Use guest name + description only (no external lookup) |
 | Free hosting limitations | Use GitHub Actions (generous free tier) |
 | Telegram message size limit (4096 chars) | Split messages into parts |
@@ -216,6 +219,8 @@ An automated bot that runs weekly (Thursdays) to:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.4 | 2026-01-27 | Update | Replaced Apple Podcasts scraping with Dropbox-only approach for Lenny's Podcast - now uses Dropbox for both episode detection AND transcript acquisition (single source of truth). Added `use_dropbox_for_detection` config flag, tracks by filename instead of GUID. |
+| 1.3 | 2026-01-23 | Update | Added Apple Podcasts scraping for Lenny's Podcast episode detection (Substack RSS 403 workaround), added `use_apple_for_detection` config flag, Telegram delivery via channel |
 | 1.2 | 2026-01-22 | Update | Fixed Sub Club RSS feed URL, added audio chunking for 20VC (>25MB files), updated summary prompt to structured bullet-point format, increased transcript limit to 100k chars, replaced async Telegram with direct HTTP requests, removed description fallback completely |
 | 1.1 | 2026-01-21 | Update | Implemented podcast-specific transcript strategies (Sub Club, Lenny's, 20VC), removed Lightcone podcast, updated fallback to "Transcript not found" |
 | 1.0 | 2026-01-21 | Initial | Initial PRD creation |

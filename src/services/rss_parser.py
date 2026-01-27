@@ -1,19 +1,24 @@
 """
 RSS feed parser service.
 Fetches and parses podcast RSS feeds to extract episode information.
+Also supports Apple Podcasts scraping as an alternative to RSS.
 """
 
 import re
 import feedparser
 import httpx
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from email.utils import parsedate_to_datetime
 
 from ..config.podcasts import PodcastConfig
 from ..models.episode import Episode, Guest
 from ..utils.logger import get_logger
 from ..utils.helpers import clean_html, extract_linkedin_urls, extract_guest_names_from_title
+
+if TYPE_CHECKING:
+    from playwright.sync_api import Page
+    from .transcript import LennysTranscriptStrategy, DropboxEpisodeResult
 
 logger = get_logger(__name__)
 
@@ -381,3 +386,251 @@ class RSSParser:
             if name:
                 return name
         return None
+    
+    def fetch_latest_episode_from_apple(
+        self, 
+        podcast: PodcastConfig, 
+        browser: "Page"
+    ) -> Optional[Episode]:
+        """
+        Fetch the latest episode by scraping Apple Podcasts page.
+        Used as alternative to RSS when RSS is blocked.
+        
+        Args:
+            podcast: Podcast configuration (must have apple_podcasts_url)
+            browser: Playwright Page instance
+        
+        Returns:
+            Episode object if successful, None otherwise
+        """
+        if not podcast.apple_podcasts_url:
+            logger.error(f"No Apple Podcasts URL configured for {podcast.name}")
+            return None
+        
+        try:
+            logger.info(f"Fetching latest episode from Apple Podcasts for {podcast.name}")
+            logger.info(f"URL: {podcast.apple_podcasts_url}")
+            
+            # Navigate to Apple Podcasts show page
+            browser.goto(podcast.apple_podcasts_url, wait_until="networkidle", timeout=30000)
+            browser.wait_for_timeout(3000)  # Wait for dynamic content
+            
+            # Find the first episode in the list
+            # Apple Podcasts uses a list structure for episodes
+            episode_data = self._extract_apple_episode_data(browser, podcast)
+            
+            if episode_data:
+                logger.info(f"Fetched latest episode from Apple: {episode_data.title}")
+                return episode_data
+            else:
+                logger.warning(f"Could not extract episode data from Apple Podcasts for {podcast.name}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error fetching from Apple Podcasts for {podcast.name}: {e}")
+            return None
+    
+    def _extract_apple_episode_data(
+        self, 
+        page: "Page", 
+        podcast: PodcastConfig
+    ) -> Optional[Episode]:
+        """
+        Extract episode data from Apple Podcasts page.
+        
+        Args:
+            page: Playwright Page with Apple Podcasts loaded
+            podcast: Podcast configuration
+        
+        Returns:
+            Episode object or None
+        """
+        try:
+            # Try to find episode elements
+            # Apple Podcasts structure: episodes are in a list, each with title, date, description
+            
+            # Method 1: Look for episode list items with links
+            episode_links = page.locator('a[href*="?i="]').all()
+            
+            if not episode_links:
+                # Method 2: Try finding by role/structure
+                episode_links = page.locator('[data-testid="episode-link"], .episode-link, li a[href*="podcast"]').all()
+            
+            if not episode_links:
+                logger.warning("No episode links found on Apple Podcasts page")
+                # Try to extract from page structure
+                return self._extract_episode_from_page_text(page, podcast)
+            
+            # Get the first episode (most recent)
+            first_episode = episode_links[0]
+            
+            # Extract title
+            title = first_episode.text_content()
+            if not title:
+                title = first_episode.get_attribute('aria-label') or "Unknown Episode"
+            title = title.strip()
+            
+            # Extract episode URL
+            episode_url = first_episode.get_attribute('href')
+            if episode_url and not episode_url.startswith('http'):
+                episode_url = f"https://podcasts.apple.com{episode_url}"
+            
+            # Create a unique GUID from the URL or title
+            guid = episode_url if episode_url else f"apple-{hash(title)}"
+            
+            # Try to get more details by navigating to episode page
+            description = ""
+            published_date = None
+            
+            if episode_url:
+                try:
+                    page.goto(episode_url, wait_until="networkidle", timeout=20000)
+                    page.wait_for_timeout(2000)
+                    
+                    # Extract description
+                    desc_elem = page.locator('[data-testid="description"], .episode-description, .product-hero-desc p').first
+                    if desc_elem.count() > 0:
+                        description = desc_elem.text_content() or ""
+                    
+                    # Extract date
+                    date_elem = page.locator('time, [datetime], .episode-date').first
+                    if date_elem.count() > 0:
+                        date_str = date_elem.get_attribute('datetime') or date_elem.text_content()
+                        if date_str:
+                            published_date = self._parse_apple_date(date_str)
+                except Exception as e:
+                    logger.debug(f"Could not get episode details: {e}")
+            
+            # Extract guests from title
+            guests = self._extract_guests(title, description, clean_html(description) if description else "")
+            
+            return Episode(
+                guid=guid,
+                podcast_id=podcast.id,
+                title=title,
+                description=description,
+                published_date=published_date,
+                episode_url=episode_url,
+                audio_url=None,  # Not available from Apple Podcasts scraping
+                apple_podcasts_url=episode_url or podcast.apple_podcasts_url,
+                guests=guests,
+                duration=None,
+            )
+            
+        except Exception as e:
+            logger.error(f"Error extracting Apple episode data: {e}")
+            return None
+    
+    def _extract_episode_from_page_text(
+        self, 
+        page: "Page", 
+        podcast: PodcastConfig
+    ) -> Optional[Episode]:
+        """
+        Fallback: Extract episode info from page text content.
+        """
+        try:
+            # Get all text from the page and try to find episode info
+            page_text = page.locator('main, #main, .main-content').first.text_content()
+            if not page_text:
+                page_text = page.locator('body').text_content()
+            
+            if not page_text:
+                return None
+            
+            # Look for patterns that indicate episode titles
+            # Lenny's episodes usually have format: "Title | Guest Name (Company)"
+            lines = page_text.split('\n')
+            
+            for line in lines:
+                line = line.strip()
+                # Skip short lines or navigation text
+                if len(line) < 20 or len(line) > 300:
+                    continue
+                # Skip lines that look like navigation
+                if any(x in line.lower() for x in ['listen on', 'subscribe', 'see all', 'episodes']):
+                    continue
+                # Look for episode-like patterns (contains | or guest pattern)
+                if '|' in line or re.search(r'\([^)]+\)$', line):
+                    # This might be an episode title
+                    title = line
+                    guests = self._extract_guests(title, "", "")
+                    
+                    return Episode(
+                        guid=f"apple-{hash(title)}",
+                        podcast_id=podcast.id,
+                        title=title,
+                        description="",
+                        published_date=None,
+                        episode_url=podcast.apple_podcasts_url,
+                        audio_url=None,
+                        apple_podcasts_url=podcast.apple_podcasts_url,
+                        guests=guests,
+                        duration=None,
+                    )
+            
+            return None
+            
+        except Exception as e:
+            logger.debug(f"Error extracting from page text: {e}")
+            return None
+    
+    def _parse_apple_date(self, date_str: str) -> Optional[datetime]:
+        """Parse date string from Apple Podcasts."""
+        if not date_str:
+            return None
+        
+        # Try various formats
+        formats = [
+            "%Y-%m-%dT%H:%M:%SZ",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d",
+            "%B %d, %Y",
+            "%b %d, %Y",
+        ]
+        
+        for fmt in formats:
+            try:
+                return datetime.strptime(date_str.strip(), fmt)
+            except ValueError:
+                continue
+        
+        return None
+    
+    def fetch_latest_episode_from_dropbox(
+        self,
+        podcast: PodcastConfig,
+        transcript_strategy: "LennysTranscriptStrategy",
+        browser: "Page"
+    ) -> Optional["DropboxEpisodeResult"]:
+        """
+        Fetch the latest episode by checking Dropbox archive.
+        Returns both episode info and transcript in one step.
+        
+        This is used for Lenny's Podcast where RSS is blocked and 
+        transcripts come from Dropbox anyway.
+        
+        Args:
+            podcast: Podcast configuration
+            transcript_strategy: LennysTranscriptStrategy instance
+            browser: Playwright Page instance
+        
+        Returns:
+            DropboxEpisodeResult with episode, transcript, and filename if found
+        """
+        try:
+            logger.info(f"Fetching latest episode from Dropbox for {podcast.name}")
+            
+            # Delegate to the transcript strategy's detection method
+            result = transcript_strategy.detect_and_fetch_latest(podcast, browser)
+            
+            if result:
+                logger.info(f"Detected latest episode from Dropbox: {result.episode.title}")
+                return result
+            else:
+                logger.warning(f"Could not detect latest episode from Dropbox for {podcast.name}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error fetching from Dropbox for {podcast.name}: {e}")
+            return None

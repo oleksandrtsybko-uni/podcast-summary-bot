@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Optional
 
 from .config import get_settings, get_all_podcasts, PodcastConfig
-from .services import RSSParser, TranscriptScraper, Summarizer, TelegramService
+from .services import RSSParser, TranscriptScraper, Summarizer, TelegramService, LennysTranscriptStrategy
 from .storage import EpisodeTracker
 from .models import Episode
 from .utils import setup_logger, get_logger
@@ -100,8 +100,26 @@ class PodcastSummaryBot:
         """
         logger.info(f"\n--- Checking: {podcast.name} ---")
         
-        # Fetch latest episode from RSS
-        episode = self.rss_parser.fetch_latest_episode(podcast)
+        # Check which detection method to use
+        if podcast.use_dropbox_for_detection and self.transcript_scraper and self.transcript_scraper._browser:
+            # Use Dropbox for both episode detection AND transcript (Lenny's Podcast)
+            return self._process_podcast_via_dropbox(podcast)
+        elif podcast.use_apple_for_detection and self.transcript_scraper and self.transcript_scraper._browser:
+            # Use Apple Podcasts scraping (for podcasts where RSS is blocked)
+            logger.info(f"Using Apple Podcasts for episode detection (RSS blocked)")
+            context = self.transcript_scraper._browser.new_context(
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
+            try:
+                episode = self.rss_parser.fetch_latest_episode_from_apple(podcast, page)
+            finally:
+                page.close()
+                context.close()
+        else:
+            # Use standard RSS feed
+            episode = self.rss_parser.fetch_latest_episode(podcast)
+        
         if not episode:
             logger.warning(f"Could not fetch latest episode for {podcast.name}")
             return False
@@ -127,6 +145,89 @@ class PodcastSummaryBot:
             )
         
         return success
+    
+    def _process_podcast_via_dropbox(self, podcast: PodcastConfig) -> bool:
+        """
+        Process Lenny's Podcast using Dropbox for both detection and transcript.
+        
+        Args:
+            podcast: Podcast configuration
+        
+        Returns:
+            True if a new episode was processed, False otherwise
+        """
+        logger.info(f"Using Dropbox for episode detection AND transcript")
+        
+        # Create browser context
+        context = self.transcript_scraper._browser.new_context(
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        page = context.new_page()
+        
+        try:
+            # Get the Lenny's strategy from the transcript scraper
+            lennys_strategy = self.transcript_scraper.strategies.get("lennys-podcast")
+            if not lennys_strategy or not isinstance(lennys_strategy, LennysTranscriptStrategy):
+                logger.error("Lenny's transcript strategy not found")
+                return False
+            
+            # Fetch latest episode from Dropbox (includes transcript)
+            result = self.rss_parser.fetch_latest_episode_from_dropbox(
+                podcast, lennys_strategy, page
+            )
+            
+            if not result:
+                logger.warning(f"Could not fetch latest episode from Dropbox for {podcast.name}")
+                return False
+            
+            episode = result.episode
+            transcript = result.transcript
+            filename = result.filename
+            
+            # Check if this is a new episode (using filename instead of GUID)
+            # We use the filename as the tracking identifier for Dropbox-sourced episodes
+            if not self.tracker.is_new_episode(podcast.id, filename):
+                logger.info(f"No new episode for {podcast.name}")
+                logger.info(f"Last file: {filename}")
+                return False
+            
+            logger.info(f"🆕 New episode found: {episode.title}")
+            logger.info(f"File: {filename}")
+            
+            # We already have the transcript from Dropbox - attach it to the episode
+            episode.transcript = transcript
+            logger.info(f"Got transcript from Dropbox ({len(transcript)} chars)")
+            
+            # Generate summary
+            logger.info("Generating AI summary...")
+            summary = self.summarizer.generate_summary(episode, podcast.name)
+            episode.summary = summary
+            logger.info(f"Generated summary ({len(summary)} chars)")
+            
+            # Send to Telegram
+            logger.info("Sending to Telegram...")
+            success = self.telegram.send_episode_summary_sync(episode, podcast.name)
+            
+            if success:
+                logger.info("✅ Successfully sent summary to Telegram")
+                # Update tracker with filename as the identifier
+                self.tracker.update_last_episode(
+                    podcast_id=podcast.id,
+                    guid=filename,  # Use filename as GUID for Dropbox-sourced episodes
+                    title=episode.title,
+                    published_date=episode.published_date,
+                )
+            else:
+                logger.error("❌ Failed to send to Telegram")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error processing {podcast.name} via Dropbox: {e}")
+            return False
+        finally:
+            page.close()
+            context.close()
     
     def _process_new_episode(self, episode: Episode, podcast: PodcastConfig) -> bool:
         """
@@ -202,17 +303,81 @@ class PodcastSummaryBot:
             logger.error(f"Podcast not found: {podcast_id}")
             return False
         
-        episode = self.rss_parser.fetch_latest_episode(podcast)
-        if not episode:
-            return False
-        
         # Initialize transcript scraper if not already done
         if self.transcript_scraper is None:
             self.transcript_scraper = TranscriptScraper()
             with self.transcript_scraper:
-                return self._process_new_episode(episode, podcast)
+                return self._force_process_podcast_internal(podcast)
         else:
-            return self._process_new_episode(episode, podcast)
+            return self._force_process_podcast_internal(podcast)
+    
+    def _force_process_podcast_internal(self, podcast: PodcastConfig) -> bool:
+        """Internal method to force process a podcast."""
+        # Check which detection method to use
+        if podcast.use_dropbox_for_detection and self.transcript_scraper._browser:
+            # Use Dropbox flow for Lenny's Podcast
+            logger.info("Using Dropbox for episode detection AND transcript (force mode)")
+            context = self.transcript_scraper._browser.new_context(
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
+            try:
+                lennys_strategy = self.transcript_scraper.strategies.get("lennys-podcast")
+                if not lennys_strategy or not isinstance(lennys_strategy, LennysTranscriptStrategy):
+                    logger.error("Lenny's transcript strategy not found")
+                    return False
+                
+                result = self.rss_parser.fetch_latest_episode_from_dropbox(
+                    podcast, lennys_strategy, page
+                )
+                
+                if not result:
+                    logger.error(f"Could not fetch episode from Dropbox for {podcast.name}")
+                    return False
+                
+                episode = result.episode
+                episode.transcript = result.transcript
+                logger.info(f"Got transcript from Dropbox ({len(result.transcript)} chars)")
+                
+                # Generate summary
+                logger.info("Generating AI summary...")
+                summary = self.summarizer.generate_summary(episode, podcast.name)
+                episode.summary = summary
+                logger.info(f"Generated summary ({len(summary)} chars)")
+                
+                # Send to Telegram
+                logger.info("Sending to Telegram...")
+                success = self.telegram.send_episode_summary_sync(episode, podcast.name)
+                
+                if success:
+                    logger.info("✅ Successfully sent summary to Telegram")
+                else:
+                    logger.error("❌ Failed to send to Telegram")
+                
+                return success
+            finally:
+                page.close()
+                context.close()
+        
+        elif podcast.use_apple_for_detection and self.transcript_scraper._browser:
+            logger.info("Using Apple Podcasts for episode detection")
+            context = self.transcript_scraper._browser.new_context(
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
+            try:
+                episode = self.rss_parser.fetch_latest_episode_from_apple(podcast, page)
+            finally:
+                page.close()
+                context.close()
+        else:
+            episode = self.rss_parser.fetch_latest_episode(podcast)
+        
+        if not episode:
+            logger.error(f"Could not fetch episode for {podcast.name}")
+            return False
+        
+        return self._process_new_episode(episode, podcast)
 
 
 def main():
