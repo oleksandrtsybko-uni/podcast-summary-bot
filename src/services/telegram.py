@@ -221,7 +221,11 @@ class TelegramService:
         for guest in episode.guests:
             name = self._escape_html(guest.name)
             if guest.linkedin_url:
+                # Direct LinkedIn profile link
                 parts.append(f'<a href="{guest.linkedin_url}">{name}</a>')
+            elif episode.apple_podcasts_url:
+                # Use Apple Podcasts episode URL as fallback link
+                parts.append(f'<a href="{episode.apple_podcasts_url}">{name}</a>')
             elif guest.description:
                 desc = self._escape_html(guest.description[:50])
                 parts.append(f"{name} ({desc})")

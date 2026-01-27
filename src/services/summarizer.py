@@ -14,7 +14,7 @@ from ..utils.helpers import clean_html, truncate_text
 logger = get_logger(__name__)
 
 # Maximum context length for transcript (to manage token usage)
-MAX_TRANSCRIPT_LENGTH = 100000  # ~25k tokens approximately
+MAX_TRANSCRIPT_LENGTH = 150000  # ~37k tokens approximately (GPT-4o supports 128k context)
 
 # Summary prompt template
 SUMMARY_PROMPT = """You are an expert podcast analyst. Create a structured, bullet-point summary of the transcript below.
