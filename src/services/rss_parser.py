@@ -17,8 +17,15 @@ from ..utils.helpers import clean_html, extract_linkedin_urls, extract_guest_nam
 
 logger = get_logger(__name__)
 
-# Custom User-Agent - mimics a podcast app to avoid being blocked
-USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+# Browser-like headers to avoid being blocked by Substack and other services
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/rss+xml, application/xml, text/xml, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Cache-Control": "no-cache",
+}
 
 
 class RSSParser:
@@ -26,7 +33,7 @@ class RSSParser:
     
     def __init__(self):
         """Initialize the RSS parser."""
-        pass
+        self._cached_feed = None  # For feedparser direct fetch fallback
     
     def fetch_latest_episode(self, podcast: PodcastConfig) -> Optional[Episode]:
         """
@@ -38,6 +45,8 @@ class RSSParser:
         Returns:
             Episode object if successful, None otherwise
         """
+        self._cached_feed = None  # Reset cached feed
+        
         try:
             logger.info(f"Fetching RSS feed for {podcast.name}: {podcast.rss_url}")
             
@@ -47,8 +56,13 @@ class RSSParser:
                 logger.error(f"Could not fetch RSS content for {podcast.name}")
                 return None
             
-            # Parse the fetched content
-            feed = feedparser.parse(feed_content)
+            # Check if we should use cached feed from feedparser direct method
+            if feed_content == "__FEEDPARSER_DIRECT__" and self._cached_feed:
+                feed = self._cached_feed
+                logger.info(f"Using feedparser direct fetch for {podcast.name}")
+            else:
+                # Parse the fetched content
+                feed = feedparser.parse(feed_content)
             
             if feed.bozo and feed.bozo_exception:
                 logger.warning(f"RSS parsing warning for {podcast.name}: {feed.bozo_exception}")
@@ -73,6 +87,7 @@ class RSSParser:
     def _fetch_rss_content(self, url: str) -> Optional[str]:
         """
         Fetch RSS content with explicit encoding handling.
+        Uses multiple methods to handle different RSS sources.
         
         Args:
             url: RSS feed URL
@@ -80,9 +95,10 @@ class RSSParser:
         Returns:
             RSS content as string, or None if failed
         """
+        # Method 1: Try with httpx and browser headers
         try:
             with httpx.Client(timeout=30.0, follow_redirects=True) as client:
-                response = client.get(url, headers={"User-Agent": USER_AGENT})
+                response = client.get(url, headers=BROWSER_HEADERS)
                 response.raise_for_status()
                 
                 # Try to decode with UTF-8, falling back to latin-1
@@ -92,25 +108,60 @@ class RSSParser:
                     logger.warning(f"UTF-8 decode failed, trying latin-1 for {url}")
                     content = response.content.decode('latin-1')
                 
-                # Replace problematic characters that can cause XML parsing issues
-                # Em dash, en dash, smart quotes, etc.
-                replacements = {
-                    '\u2014': '-',  # em dash
-                    '\u2013': '-',  # en dash
-                    '\u2018': "'",  # left single quote
-                    '\u2019': "'",  # right single quote
-                    '\u201c': '"',  # left double quote
-                    '\u201d': '"',  # right double quote
-                    '\u2026': '...',  # ellipsis
-                }
-                for old, new in replacements.items():
-                    content = content.replace(old, new)
+                return self._clean_rss_content(content)
                 
-                return content
-                
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 403:
+                logger.warning(f"Got 403 from {url}, trying feedparser direct method")
+                # Method 2: Try feedparser's built-in fetching (uses different user-agent handling)
+                return self._fetch_with_feedparser(url)
+            logger.error(f"HTTP error fetching RSS from {url}: {e}")
+            return None
         except Exception as e:
             logger.error(f"Error fetching RSS content from {url}: {e}")
+            # Try fallback method
+            return self._fetch_with_feedparser(url)
+    
+    def _fetch_with_feedparser(self, url: str) -> Optional[str]:
+        """
+        Fallback method using feedparser's built-in URL handling.
+        Returns the raw feed object which can be passed to parse().
+        """
+        try:
+            # feedparser can fetch directly with custom agent
+            feed = feedparser.parse(
+                url, 
+                agent="Mozilla/5.0 (compatible; PodcastBot/1.0; +https://github.com)"
+            )
+            
+            if feed.bozo and not feed.entries:
+                logger.error(f"Feedparser failed for {url}: {feed.bozo_exception}")
+                return None
+            
+            # Return a marker that indicates we should use the feed object directly
+            # Store the feed in a class variable for later use
+            self._cached_feed = feed
+            return "__FEEDPARSER_DIRECT__"
+            
+        except Exception as e:
+            logger.error(f"Feedparser direct fetch failed for {url}: {e}")
             return None
+    
+    def _clean_rss_content(self, content: str) -> str:
+        """Clean RSS content by replacing problematic characters."""
+        # Replace problematic characters that can cause XML parsing issues
+        replacements = {
+            '\u2014': '-',  # em dash
+            '\u2013': '-',  # en dash
+            '\u2018': "'",  # left single quote
+            '\u2019': "'",  # right single quote
+            '\u201c': '"',  # left double quote
+            '\u201d': '"',  # right double quote
+            '\u2026': '...',  # ellipsis
+        }
+        for old, new in replacements.items():
+            content = content.replace(old, new)
+        return content
     
     def fetch_recent_episodes(self, podcast: PodcastConfig, count: int = 5) -> list[Episode]:
         """
@@ -123,6 +174,8 @@ class RSSParser:
         Returns:
             List of Episode objects
         """
+        self._cached_feed = None  # Reset cached feed
+        
         try:
             logger.info(f"Fetching RSS feed for {podcast.name}")
             
@@ -132,7 +185,11 @@ class RSSParser:
                 logger.error(f"Could not fetch RSS content for {podcast.name}")
                 return []
             
-            feed = feedparser.parse(feed_content)
+            # Check if we should use cached feed from feedparser direct method
+            if feed_content == "__FEEDPARSER_DIRECT__" and self._cached_feed:
+                feed = self._cached_feed
+            else:
+                feed = feedparser.parse(feed_content)
             
             if not feed.entries:
                 logger.warning(f"No entries found in RSS feed for {podcast.name}")
