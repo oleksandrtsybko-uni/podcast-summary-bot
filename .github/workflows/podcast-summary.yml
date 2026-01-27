@@ -1,12 +1,12 @@
 # Podcast Summary Bot - GitHub Actions Workflow
-# Runs weekly on Thursdays at 09:00 UTC to check for new podcast episodes
+# Runs weekly on Thursdays at 09:00 Kyiv time (07:00 UTC in winter, 06:00 UTC in summer)
 
 name: Podcast Summary Bot
 
 on:
-  # Scheduled run - every Thursday at 09:00 UTC
+  # Scheduled run - every Thursday at 07:00 UTC (9 AM Kyiv time in winter)
   schedule:
-    - cron: '0 9 * * 4'  # 4 = Thursday
+    - cron: '0 7 * * 4'  # 4 = Thursday, 07:00 UTC = 09:00 Kyiv (EET/winter)
   
   # Manual trigger for testing
   workflow_dispatch:
