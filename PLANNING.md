@@ -98,7 +98,7 @@ src/
 | `requests` | Telegram HTTP API calls | ^2.32 |
 | `httpx` | Async HTTP client | ^0.27 |
 | `beautifulsoup4` | HTML parsing (Apple Podcasts transcripts) | ^4.12 |
-| `playwright` | Browser automation for transcript scraping | ^1.40 |
+| `playwright` | Browser automation for transcript scraping (with retry logic for Dropbox) | ^1.40 |
 | `pydub` | Audio chunking for Whisper (files >25MB) | ^0.25 |
 | `pydantic` | Data validation & settings | ^2.0 |
 | `python-dotenv` | Local env management | ^1.0 |
@@ -145,6 +145,15 @@ src/
 | 20VC | RSS Feed | `https://thetwentyminutevc.libsyn.com/rss` | Whisper AI (audio transcription with chunking) |
 
 *Note: Lenny's Podcast uses Dropbox archive for BOTH episode detection AND transcript acquisition. The newest `.txt` file (by modified date) is used. This eliminates both Substack RSS (403 errors) and Apple Podcasts scraping dependencies. Sub Club RSS corrected from simplecast to transistor.fm.*
+
+### Dropbox Navigation Strategy
+
+The Dropbox transcript fetcher uses a robust navigation approach to handle CI environment challenges:
+
+1. **Wait Strategy**: Uses `domcontentloaded` instead of `networkidle` - Dropbox pages have continuous background network activity (analytics, streaming updates) that prevents `networkidle` from completing
+2. **Element Waiting**: Waits for actual file selectors (`a[href*=".txt"], table tbody tr`) rather than arbitrary timeouts
+3. **Retry Logic**: 3 attempts with exponential backoff (5s, 10s delays) on timeout failures
+4. **Explicit Error Handling**: Catches `PlaywrightTimeoutError` specifically for informative logging
 
 ---
 

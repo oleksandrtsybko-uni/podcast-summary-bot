@@ -8,8 +8,8 @@
 ## 1. Executive Summary
 
 **Project Name:** Podcast Summary Bot  
-**Version:** 1.4  
-**Last Updated:** January 27, 2026
+**Version:** 1.5  
+**Last Updated:** February 5, 2026
 
 A lightweight automation bot that monitors specific Apple Podcasts shows weekly, detects new episodes, generates AI-powered summaries from transcripts, and delivers structured briefings via Telegram. Designed for busy professionals who want to stay informed about key podcast content without listening to full episodes.
 
@@ -55,6 +55,7 @@ An automated bot that runs weekly (Thursdays) to:
 - **Storage:** Minimal - store only last processed episode ID per podcast (or filename for Dropbox-sourced podcasts)
 - **Comparison:** Compare latest RSS entry against stored episode ID
 - **Dropbox Detection:** For Lenny's Podcast, Dropbox archive is used for both episode detection AND transcript acquisition. The newest `.txt` file (sorted by modified date) determines the latest episode. This eliminates both RSS (Substack 403 errors) and Apple Podcasts scraping dependencies.
+- **Dropbox Navigation:** Uses retry logic (3 attempts with exponential backoff) and `domcontentloaded` wait strategy instead of `networkidle` to handle Dropbox's continuous background network activity in CI environments.
 
 ### 5.2 Metadata Extraction (FR-002)
 - **Requirement:** Extract the following from new episodes:
@@ -176,6 +177,7 @@ An automated bot that runs weekly (Thursdays) to:
 | No official Apple Podcasts API | Use RSS feeds (reliable, public) |
 | Substack RSS blocks GitHub Actions IPs | Use Dropbox archive for Lenny's (single source for detection + transcript) |
 | Apple Podcasts scraping unreliable | Eliminated for Lenny's - use Dropbox instead |
+| Dropbox pages have continuous network activity | Use `domcontentloaded` instead of `networkidle`, wait for specific file selectors, retry with exponential backoff |
 | Transcript scraping may fail | Set transcript to "Transcript not found" |
 | LinkedIn links not always in description | Use guest name + description only (no external lookup) |
 | Free hosting limitations | Use GitHub Actions (generous free tier) |
@@ -219,6 +221,7 @@ An automated bot that runs weekly (Thursdays) to:
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.5 | 2026-02-05 | Update | Fixed Dropbox navigation timeouts in GitHub Actions. Added retry logic (3 attempts with exponential backoff), changed from `networkidle` to `domcontentloaded` wait strategy, added specific file selector waiting (`a[href*=".txt"]`). |
 | 1.4 | 2026-01-27 | Update | Replaced Apple Podcasts scraping with Dropbox-only approach for Lenny's Podcast - now uses Dropbox for both episode detection AND transcript acquisition (single source of truth). Added `use_dropbox_for_detection` config flag, tracks by filename instead of GUID. |
 | 1.3 | 2026-01-23 | Update | Added Apple Podcasts scraping for Lenny's Podcast episode detection (Substack RSS 403 workaround), added `use_apple_for_detection` config flag, Telegram delivery via channel |
 | 1.2 | 2026-01-22 | Update | Fixed Sub Club RSS feed URL, added audio chunking for 20VC (>25MB files), updated summary prompt to structured bullet-point format, increased transcript limit to 100k chars, replaced async Telegram with direct HTTP requests, removed description fallback completely |
