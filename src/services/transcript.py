@@ -275,6 +275,39 @@ class SubClubTranscriptStrategy(TranscriptStrategy):
 class LennysTranscriptStrategy(TranscriptStrategy):
     """Downloads transcripts from Dropbox archive, matching by guest name."""
     
+    def _navigate_to_dropbox(self, browser: Page, max_retries: int = 3) -> bool:
+        """
+        Navigate to Dropbox folder with retry logic.
+        
+        Args:
+            browser: Playwright Page instance
+            max_retries: Maximum number of retry attempts
+        
+        Returns:
+            True if navigation succeeded, raises exception on failure
+        """
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Navigating to Dropbox (attempt {attempt + 1}/{max_retries})...")
+                # Use domcontentloaded instead of networkidle - Dropbox has continuous 
+                # background network activity that may never reach "idle" state
+                browser.goto(LENNYS_DROPBOX_URL, wait_until="domcontentloaded", timeout=60000)
+                # Wait for file table to appear (more reliable than networkidle)
+                browser.wait_for_selector('table tbody tr, [class*="brws-file-row"], [class*="file-row"]', timeout=30000)
+                browser.wait_for_timeout(2000)  # Brief stabilization for dynamic content
+                logger.info("Successfully loaded Dropbox folder")
+                return True
+            except PlaywrightTimeoutError as e:
+                logger.warning(f"Dropbox navigation timeout (attempt {attempt + 1}): {e}")
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 5  # 5s, 10s backoff
+                    logger.info(f"Retrying in {wait_time}s...")
+                    browser.wait_for_timeout(wait_time * 1000)
+                else:
+                    logger.error(f"Failed to load Dropbox after {max_retries} attempts")
+                    raise
+        return False
+    
     def fetch_transcript(
         self,
         episode: Episode,
@@ -295,9 +328,8 @@ class LennysTranscriptStrategy(TranscriptStrategy):
             
             logger.info(f"Looking for Lenny's transcript for guest: {guest_name}")
             
-            # Navigate to Dropbox folder (increased timeout for slow loads)
-            browser.goto(LENNYS_DROPBOX_URL, wait_until="networkidle", timeout=60000)
-            browser.wait_for_timeout(5000)  # Wait for files to load
+            # Navigate to Dropbox folder with retry logic
+            self._navigate_to_dropbox(browser)
             
             # Find files in the folder
             files = self._list_dropbox_files(browser)
@@ -338,9 +370,8 @@ class LennysTranscriptStrategy(TranscriptStrategy):
         try:
             logger.info(f"Detecting latest Lenny's episode from Dropbox archive...")
             
-            # Navigate to Dropbox folder
-            browser.goto(LENNYS_DROPBOX_URL, wait_until="networkidle", timeout=60000)
-            browser.wait_for_timeout(5000)  # Wait for files to load
+            # Navigate to Dropbox folder with retry logic
+            self._navigate_to_dropbox(browser)
             
             # Sort by Modified date (newest first)
             try:
