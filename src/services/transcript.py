@@ -292,8 +292,8 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                 # Use domcontentloaded instead of networkidle - Dropbox has continuous 
                 # background network activity that may never reach "idle" state
                 browser.goto(LENNYS_DROPBOX_URL, wait_until="domcontentloaded", timeout=60000)
-                # Wait for file table to appear (more reliable than networkidle)
-                browser.wait_for_selector('table tbody tr, [class*="brws-file-row"], [class*="file-row"]', timeout=30000)
+                # Wait for file links or table rows to appear (same selectors used by _list_dropbox_files)
+                browser.wait_for_selector('a[href*=".txt"], table tbody tr', timeout=30000)
                 browser.wait_for_timeout(2000)  # Brief stabilization for dynamic content
                 logger.info("Successfully loaded Dropbox folder")
                 return True
