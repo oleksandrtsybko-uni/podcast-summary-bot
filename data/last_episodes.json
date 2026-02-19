@@ -1,20 +1,20 @@
 {
   "lennys-podcast": {
-    "guid": "Dr. Becky Kennedy.txt",
-    "title": "A child psychologist\u2019s guide to working with difficult adults | Dr. Becky Kennedy",
-    "published_date": "2026-02-01T00:00:00",
-    "processed_at": "2026-02-05T09:56:02.513752"
+    "guid": "Brian Halligan.txt",
+    "title": "Sequoia CEO coach: Why it\u2019s never been easier to start a company, and never been harder to scale one | Brian Halligan (co-founder, HubSpot)",
+    "published_date": "2026-02-15T00:00:00",
+    "processed_at": "2026-02-19T07:54:47.134213"
   },
   "sub-club": {
-    "guid": "5e8bab44-3d62-4814-9f82-47e4a9008730",
-    "title": "How ElevenLabs Builds, Prices, and Grows AI Consumer Apps",
-    "published_date": "2026-02-04T09:00:00",
-    "processed_at": "2026-02-05T07:54:52.053239"
+    "guid": "d4bdfe39-85d8-4013-8a14-1f5d3c2ad9ab",
+    "title": "How Skylight Balances Growth and Profit for Sustainable Success - Michael Segal & Mark Ungerer, Skylight",
+    "published_date": "2026-02-18T09:00:00",
+    "processed_at": "2026-02-19T07:55:07.375761"
   },
   "20vc": {
-    "guid": "3c4ce5ff-c537-4c9e-aafe-7ebd136f6d3b",
-    "title": "20VC: Anthropic's Superbowl Ad: Who Won - Who Lost | Harvey Raises $200M at $11BN Valuation | Sierra Hits $150M in ARR: Is Customer Support Too Crowded",
-    "published_date": "2026-02-12T07:07:00",
-    "processed_at": "2026-02-12T08:02:54.324141"
+    "guid": "d7313609-e0d6-4c4d-ab91-b548c5b0153b",
+    "title": "20VC: Anthropic Raises $30BN at $380BN Valuation | Thrive Raises New $10BN Fund | OpenAI Buys OpenClaw | Stripe Raises at $140BN: Is Adyen Wildly Undervalued? | Monday, Figma, Shopify: Which are Buys vs Sells?",
+    "published_date": "2026-02-19T07:07:00",
+    "processed_at": "2026-02-19T08:01:19.868025"
   }
 }
