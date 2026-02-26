@@ -1,9 +1,9 @@
 {
   "lennys-podcast": {
-    "guid": "Brian Halligan.txt",
-    "title": "Sequoia CEO coach: Why it\u2019s never been easier to start a company, and never been harder to scale one | Brian Halligan (co-founder, HubSpot)",
-    "published_date": "2026-02-15T00:00:00",
-    "processed_at": "2026-02-19T07:54:47.134213"
+    "guid": "Boris Cherny.txt",
+    "title": "Head of Claude Code: What happens after coding is solved | Boris Cherny",
+    "published_date": "2026-02-19T00:00:00",
+    "processed_at": "2026-02-26T07:56:05.698207"
   },
   "sub-club": {
     "guid": "d4bdfe39-85d8-4013-8a14-1f5d3c2ad9ab",
@@ -12,9 +12,9 @@
     "processed_at": "2026-02-19T07:55:07.375761"
   },
   "20vc": {
-    "guid": "d7313609-e0d6-4c4d-ab91-b548c5b0153b",
-    "title": "20VC: Anthropic Raises $30BN at $380BN Valuation | Thrive Raises New $10BN Fund | OpenAI Buys OpenClaw | Stripe Raises at $140BN: Is Adyen Wildly Undervalued? | Monday, Figma, Shopify: Which are Buys vs Sells?",
-    "published_date": "2026-02-19T07:07:00",
-    "processed_at": "2026-02-19T08:01:19.868025"
+    "guid": "8c818eea-0a02-44ab-b287-5577dfca87a6",
+    "title": "20VC: Anthropic Wipes Billions Off Markets | Citrini Research: The Ultimate Breakdown: Agents, \"Ghost GDP\", Consumer Spend etc. | Figma Earnings Beat & Four Public Stocks to Buy | Jack Altman Joins Benchmark",
+    "published_date": "2026-02-26T07:07:00",
+    "processed_at": "2026-02-26T08:01:13.691971"
   }
 }
