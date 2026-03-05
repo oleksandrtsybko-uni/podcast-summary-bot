@@ -1,20 +1,20 @@
 {
   "lennys-podcast": {
-    "guid": "Boris Cherny.txt",
-    "title": "Head of Claude Code: What happens after coding is solved | Boris Cherny",
-    "published_date": "2026-02-19T00:00:00",
-    "processed_at": "2026-02-26T07:56:05.698207"
+    "guid": "Amjad Masad.txt",
+    "title": "The design process is dead. Here\u2019s what\u2019s replacing it. | Jenny Wen (head of design at Claude)",
+    "published_date": "2026-03-01T00:00:00",
+    "processed_at": "2026-03-05T07:47:21.208960"
   },
   "sub-club": {
-    "guid": "d4bdfe39-85d8-4013-8a14-1f5d3c2ad9ab",
-    "title": "How Skylight Balances Growth and Profit for Sustainable Success - Michael Segal & Mark Ungerer, Skylight",
-    "published_date": "2026-02-18T09:00:00",
-    "processed_at": "2026-02-19T07:55:07.375761"
+    "guid": "dd72a6cb-3a9d-4c21-a32f-c790f3a9394e",
+    "title": "Dynamic Paywalls That Drove Millions in New Revenue - Shawn Gong, Tinder",
+    "published_date": "2026-03-04T09:00:00",
+    "processed_at": "2026-03-05T07:47:49.954682"
   },
   "20vc": {
-    "guid": "8c818eea-0a02-44ab-b287-5577dfca87a6",
-    "title": "20VC: Anthropic Wipes Billions Off Markets | Citrini Research: The Ultimate Breakdown: Agents, \"Ghost GDP\", Consumer Spend etc. | Figma Earnings Beat & Four Public Stocks to Buy | Jack Altman Joins Benchmark",
-    "published_date": "2026-02-26T07:07:00",
-    "processed_at": "2026-02-26T08:01:13.691971"
+    "guid": "fc3ed2ae-2f78-4159-aaa4-f06fae8d3661",
+    "title": "20VC: Anthropic vs The Pentagon: Who Wins | OpenAI's $110BN Mega Round | Cursor Hits $2BN in ARR | Block's 40% Headcount Reduction: AI or Overhiring",
+    "published_date": "2026-03-05T07:07:00",
+    "processed_at": "2026-03-05T07:52:55.553634"
   }
 }
