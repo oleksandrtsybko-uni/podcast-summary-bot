@@ -1,20 +1,20 @@
 {
   "lennys-podcast": {
-    "guid": "Amjad Masad.txt",
-    "title": "The design process is dead. Here\u2019s what\u2019s replacing it. | Jenny Wen (head of design at Claude)",
-    "published_date": "2026-03-01T00:00:00",
-    "processed_at": "2026-03-05T07:47:21.208960"
+    "guid": "Boris Cherny.txt",
+    "title": "The most successful AI company you\u2019ve never heard of | Qasar Younis",
+    "published_date": "2026-03-08T00:00:00",
+    "processed_at": "2026-03-12T07:51:56.182731"
   },
   "sub-club": {
-    "guid": "dd72a6cb-3a9d-4c21-a32f-c790f3a9394e",
-    "title": "Dynamic Paywalls That Drove Millions in New Revenue - Shawn Gong, Tinder",
-    "published_date": "2026-03-04T09:00:00",
-    "processed_at": "2026-03-05T07:47:49.954682"
+    "guid": "bb1c0f94-ce36-49db-a370-6e2bca96be95",
+    "title": "How ElevenLabs Turns Feature Launches Into a Growth Engine - Luke Harries",
+    "published_date": "2026-03-09T08:00:00",
+    "processed_at": "2026-03-12T07:52:12.175543"
   },
   "20vc": {
-    "guid": "fc3ed2ae-2f78-4159-aaa4-f06fae8d3661",
-    "title": "20VC: Anthropic vs The Pentagon: Who Wins | OpenAI's $110BN Mega Round | Cursor Hits $2BN in ARR | Block's 40% Headcount Reduction: AI or Overhiring",
-    "published_date": "2026-03-05T07:07:00",
-    "processed_at": "2026-03-05T07:52:55.553634"
+    "guid": "f85d3f79-b959-418c-bdc9-d190d40528eb",
+    "title": "20VC: Anthropic vs The Pentagon: Who Wins | The Ultimate Stock Picks: What to Buy | The Data Centre Arms Race: Is the Capex War Stalling | The Era of Public Company Deceleration is Dead",
+    "published_date": "2026-03-12T07:07:00",
+    "processed_at": "2026-03-12T07:57:21.684945"
   }
 }
