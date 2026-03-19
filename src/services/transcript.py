@@ -609,64 +609,27 @@ class LennysTranscriptStrategy(TranscriptStrategy):
         """
         Ensure all files are rendered in the DOM.
         
-        Dropbox shared folders use a virtualized/lazy list that only renders
-        a subset of files initially.  Two techniques combined:
-        1.  Click a column header to trigger a server-side sort & full data fetch.
-        2.  Scroll inside the actual scrollable container (not window) so the
-            virtualizer renders the remaining rows.
+        Dropbox shared folders lazy-load files. Clicking a column header
+        twice triggers a full data refresh. Then we wait for the content
+        to finish loading.
         """
         initial_count = page.locator('table tbody tr').count()
         logger.info(f"Initial file rows visible: {initial_count}")
         
-        # Click "Modified" header to trigger a sort / data refresh
         try:
             modified_btn = page.locator('button:has-text("Modified")').first
             if modified_btn.count() > 0:
                 modified_btn.click()
-                page.wait_for_timeout(3000)
+                page.wait_for_timeout(5000)
+                count_after_first = page.locator('table tbody tr').count()
+                logger.info(f"Rows after 1st click: {count_after_first}")
+                
                 modified_btn.click()
-                page.wait_for_timeout(3000)
-                logger.info(f"Rows after clicking Modified: {page.locator('table tbody tr').count()}")
+                page.wait_for_timeout(10000)
+                count_after_second = page.locator('table tbody tr').count()
+                logger.info(f"Rows after 2nd click + 10s wait: {count_after_second}")
         except Exception as e:
-            logger.debug(f"Could not click Modified header: {e}")
-        
-        # Scroll the list container to trigger lazy rendering of remaining rows
-        prev_count = 0
-        stable_rounds = 0
-        for i in range(30):
-            current_count = page.locator('table tbody tr').count()
-            if current_count == prev_count:
-                stable_rounds += 1
-                if stable_rounds >= 3:
-                    break
-            else:
-                stable_rounds = 0
-            prev_count = current_count
-            
-            # Scroll the last visible row into view — works regardless of
-            # which container is actually scrollable
-            page.evaluate("""
-                const rows = document.querySelectorAll('table tbody tr');
-                if (rows.length > 0)
-                    rows[rows.length - 1].scrollIntoView({block: 'end'});
-            """)
-            # Also try scrolling the first ancestor that has overflow
-            page.evaluate("""
-                const table = document.querySelector('table');
-                if (table) {
-                    let el = table.parentElement;
-                    while (el && el !== document.documentElement) {
-                        if (el.scrollHeight > el.clientHeight + 10) {
-                            el.scrollTop = el.scrollHeight;
-                            break;
-                        }
-                        el = el.parentElement;
-                    }
-                }
-            """)
-            page.wait_for_timeout(1500)
-        
-        logger.info(f"Loaded {prev_count} file rows total in Dropbox")
+            logger.warning(f"Could not click Modified header: {e}")
     
     def _list_dropbox_files(self, page: Page) -> list[dict]:
         """List files in Dropbox folder with modified dates."""
