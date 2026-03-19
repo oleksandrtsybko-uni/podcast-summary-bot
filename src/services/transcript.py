@@ -605,26 +605,76 @@ class LennysTranscriptStrategy(TranscriptStrategy):
         
         return None
     
-    def _scroll_to_load_all_files(self, page: Page, max_scrolls: int = 30) -> None:
-        """Scroll the Dropbox file list to trigger lazy loading of all files."""
+    def _load_all_dropbox_files(self, page: Page) -> None:
+        """
+        Ensure all files are rendered in the DOM.
+        
+        Dropbox shared folders use a virtualized/lazy list that only renders
+        a subset of files initially.  Two techniques combined:
+        1.  Click a column header to trigger a server-side sort & full data fetch.
+        2.  Scroll inside the actual scrollable container (not window) so the
+            virtualizer renders the remaining rows.
+        """
+        initial_count = page.locator('table tbody tr').count()
+        logger.info(f"Initial file rows visible: {initial_count}")
+        
+        # Click "Modified" header to trigger a sort / data refresh
+        try:
+            modified_btn = page.locator('button:has-text("Modified")').first
+            if modified_btn.count() > 0:
+                modified_btn.click()
+                page.wait_for_timeout(3000)
+                modified_btn.click()
+                page.wait_for_timeout(3000)
+                logger.info(f"Rows after clicking Modified: {page.locator('table tbody tr').count()}")
+        except Exception as e:
+            logger.debug(f"Could not click Modified header: {e}")
+        
+        # Scroll the list container to trigger lazy rendering of remaining rows
         prev_count = 0
-        for i in range(max_scrolls):
+        stable_rounds = 0
+        for i in range(30):
             current_count = page.locator('table tbody tr').count()
-            if current_count == prev_count and i > 0:
-                logger.info(f"All files loaded after {i} scroll(s): {current_count} rows")
-                return
+            if current_count == prev_count:
+                stable_rounds += 1
+                if stable_rounds >= 3:
+                    break
+            else:
+                stable_rounds = 0
             prev_count = current_count
-            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            
+            # Scroll the last visible row into view — works regardless of
+            # which container is actually scrollable
+            page.evaluate("""
+                const rows = document.querySelectorAll('table tbody tr');
+                if (rows.length > 0)
+                    rows[rows.length - 1].scrollIntoView({block: 'end'});
+            """)
+            # Also try scrolling the first ancestor that has overflow
+            page.evaluate("""
+                const table = document.querySelector('table');
+                if (table) {
+                    let el = table.parentElement;
+                    while (el && el !== document.documentElement) {
+                        if (el.scrollHeight > el.clientHeight + 10) {
+                            el.scrollTop = el.scrollHeight;
+                            break;
+                        }
+                        el = el.parentElement;
+                    }
+                }
+            """)
             page.wait_for_timeout(1500)
-        logger.info(f"Finished scrolling ({max_scrolls} iterations): {prev_count} rows loaded")
+        
+        logger.info(f"Loaded {prev_count} file rows total in Dropbox")
     
     def _list_dropbox_files(self, page: Page) -> list[dict]:
         """List files in Dropbox folder with modified dates."""
         files = []
         try:
-            # Scroll to load all files — Dropbox lazy-loads and may only
+            # Load all files — Dropbox lazy-loads and may only
             # render 20-30 of 90+ files initially
-            self._scroll_to_load_all_files(page)
+            self._load_all_dropbox_files(page)
             
             # Dropbox uses a table structure - find all rows
             # Each row contains: filename link, modified date, etc.
@@ -831,6 +881,9 @@ class LennysTranscriptStrategy(TranscriptStrategy):
             logger.info(f"Matched file: {best_match['name']} (score: {best_score})")
             return best_match
         
+        file_names = [f['name'] for f in files[:10]]
+        logger.warning(f"No match for '{guest_name}' among {len(files)} files. "
+                       f"First files: {file_names}")
         return None
     
     def _download_and_parse_file(self, page: Page, file_info: dict) -> Optional[str]:
