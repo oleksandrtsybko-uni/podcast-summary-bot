@@ -357,8 +357,11 @@ class LennysTranscriptStrategy(TranscriptStrategy):
         browser: Page
     ) -> Optional[DropboxEpisodeResult]:
         """
-        Detect the latest episode from Dropbox and fetch its transcript in one step.
-        Used for episode detection when RSS/Apple Podcasts are blocked.
+        Detect the latest episode from Apple Podcasts, then find its transcript
+        in the Dropbox archive by guest name.
+        
+        Apple Podcasts is the source of truth for which episode is latest
+        (always shows newest first). Dropbox is used only for transcript content.
         
         Args:
             podcast: Podcast configuration
@@ -368,145 +371,24 @@ class LennysTranscriptStrategy(TranscriptStrategy):
             DropboxEpisodeResult with episode, transcript, and filename if found
         """
         try:
-            logger.info(f"Detecting latest Lenny's episode from Dropbox archive...")
-            
-            # Navigate to Dropbox folder with retry logic
-            self._navigate_to_dropbox(browser)
-            
-            # Sort by Modified date (newest first)
-            try:
-                modified_button = browser.locator('button:has-text("Modified")').first
-                if modified_button.count() > 0:
-                    # Click twice to ensure descending order (newest first)
-                    modified_button.click()
-                    browser.wait_for_timeout(1500)
-                    # Check if we need to click again for descending
-                    modified_button.click()
-                    browser.wait_for_timeout(2000)
-                    logger.info("Sorted Dropbox files by Modified date (newest first)")
-            except Exception as e:
-                logger.warning(f"Could not sort by modified date: {e}")
-            
-            # Get files from Dropbox
-            files = self._list_dropbox_files(browser)
-            if not files:
-                logger.warning("No files found in Dropbox folder")
+            # --- Step 1: Get latest episode metadata from Apple Podcasts ---
+            if not podcast.apple_podcasts_url:
+                logger.error("No Apple Podcasts URL configured for Lenny's Podcast")
                 return None
             
-            # Sort in Python by modified_date (newest first) as a reliable
-            # fallback — the UI button-click sorting is fragile
-            files_with_dates = [f for f in files if f.get('modified_date')]
-            files_without_dates = [f for f in files if not f.get('modified_date')]
-            
-            if not files_with_dates:
-                logger.warning(
-                    f"Could not parse modified dates for any of {len(files)} files — "
-                    f"relying on Dropbox UI sort order which may be incorrect"
-                )
-            else:
-                logger.info(f"Parsed dates for {len(files_with_dates)}/{len(files)} files")
-                files_with_dates.sort(key=lambda f: f['modified_date'], reverse=True)
-            
-            files = files_with_dates + files_without_dates
-            
-            newest_file = files[0]
-            logger.info(f"Newest file in Dropbox: {newest_file['name']} "
-                        f"(modified: {newest_file.get('modified_date', 'unknown')})")
-            
-            # Extract guest name from filename
-            guest_name = self._extract_guest_from_filename(newest_file['name'])
-            if not guest_name:
-                logger.warning(f"Could not extract guest name from filename: {newest_file['name']}")
-                guest_name = Path(newest_file['name']).stem  # Use filename without extension
-            
-            logger.info(f"Detected guest: {guest_name}")
-            
-            # Download the transcript
-            transcript = self._download_and_parse_file(browser, newest_file)
-            if not transcript:
-                logger.error(f"Failed to download transcript for: {newest_file['name']}")
-                return None
-            
-            logger.info(f"Successfully downloaded transcript ({len(transcript)} chars)")
-            
-            # Create Episode object from Dropbox file info
-            episode = Episode(
-                guid=f"dropbox-{newest_file['name']}",  # Unique identifier based on filename
-                podcast_id=podcast.id,
-                title=f"Lenny's Podcast | {guest_name}",  # Construct title from guest name
-                description="",  # No description available from Dropbox
-                published_date=newest_file.get('modified_date'),  # Use file modified date if available
-                episode_url=podcast.website,  # Link to podcast website
-                audio_url=None,
-                apple_podcasts_url=podcast.apple_podcasts_url,
-                guests=[Guest(name=guest_name)],
-                duration=None,
-            )
-            
-            # Enrich episode with Apple Podcasts metadata
-            logger.info("Enriching episode with Apple Podcasts metadata...")
-            enriched_episode = self._enrich_from_apple_podcasts(episode, guest_name, podcast, browser)
-            if enriched_episode:
-                episode = enriched_episode
-                logger.info(f"Enriched episode: {episode.title}")
-            else:
-                logger.warning("Could not enrich episode from Apple Podcasts, using Dropbox data only")
-            
-            return DropboxEpisodeResult(
-                episode=episode,
-                transcript=transcript,
-                filename=newest_file['name']
-            )
-            
-        except Exception as e:
-            logger.error(f"Error detecting latest episode from Dropbox: {e}")
-            return None
-    
-    def _enrich_from_apple_podcasts(
-        self,
-        episode: Episode,
-        guest_name: str,
-        podcast: PodcastConfig,
-        browser: Page
-    ) -> Optional[Episode]:
-        """
-        Enrich episode metadata from Apple Podcasts.
-        Gets the latest episode and extracts: clean title, date, and LinkedIn URL.
-        Does NOT include full description (we only need title, date, guest link).
-        
-        Args:
-            episode: Basic episode from Dropbox
-            guest_name: Guest name extracted from Dropbox filename
-            podcast: Podcast configuration
-            browser: Playwright Page instance
-        
-        Returns:
-            Enriched Episode object, or None if enrichment fails
-        """
-        if not podcast.apple_podcasts_url:
-            logger.warning("No Apple Podcasts URL configured")
-            return None
-        
-        try:
-            # Navigate to Apple Podcasts show page
-            logger.info(f"Fetching Apple Podcasts metadata from: {podcast.apple_podcasts_url}")
+            logger.info("Detecting latest Lenny's episode from Apple Podcasts...")
             browser.goto(podcast.apple_podcasts_url, wait_until="networkidle", timeout=30000)
-            browser.wait_for_timeout(3000)  # Wait for dynamic content
+            browser.wait_for_timeout(3000)
             
-            # Get the first/latest episode link
             episode_links = browser.locator('a[href*="?i="]').all()
             if not episode_links:
                 logger.warning("No episode links found on Apple Podcasts page")
                 return None
             
-            first_episode_link = episode_links[0]
-            
-            # Get episode URL
-            episode_url = first_episode_link.get_attribute('href')
+            episode_url = episode_links[0].get_attribute('href')
             if episode_url and not episode_url.startswith('http'):
                 episode_url = f"https://podcasts.apple.com{episode_url}"
             
-            # Navigate to episode page to get clean title and details
             apple_title = None
             published_date = None
             linkedin_url = None
@@ -516,36 +398,19 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                     browser.goto(episode_url, wait_until="networkidle", timeout=20000)
                     browser.wait_for_timeout(2000)
                     
-                    # Extract clean episode title from the page header (not the link text)
-                    title_selectors = [
-                        'h1[class*="headings"]',
-                        'h1[class*="title"]',
-                        'h1',
-                        '[data-testid="episode-title"]',
-                    ]
-                    for selector in title_selectors:
+                    for selector in ['h1[class*="headings"]', 'h1[class*="title"]', 'h1', '[data-testid="episode-title"]']:
                         try:
                             title_elem = browser.locator(selector).first
                             if title_elem.count() > 0:
                                 title_text = title_elem.text_content()
                                 if title_text and len(title_text) > 10:
                                     apple_title = title_text.strip()
-                                    # Remove any leading date indicators like "2D AGO"
                                     apple_title = re.sub(r'^\d+[DHM]\s+AGO\s+', '', apple_title, flags=re.IGNORECASE)
                                     break
                         except Exception:
                             continue
                     
-                    # Extract published date - try multiple selectors
-                    date_selectors = [
-                        'time[datetime]',
-                        'time',
-                        '[datetime]',
-                        '.episode-date',
-                        '[class*="date"]',
-                        '[class*="Date"]',
-                    ]
-                    for selector in date_selectors:
+                    for selector in ['time[datetime]', 'time', '[datetime]', '.episode-date', '[class*="date"]', '[class*="Date"]']:
                         try:
                             date_elem = browser.locator(selector).first
                             if date_elem.count() > 0:
@@ -554,47 +419,33 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                                     parsed = self._parse_apple_date(date_str.strip())
                                     if parsed:
                                         published_date = parsed
-                                        logger.info(f"Found date: {published_date}")
                                         break
                         except Exception:
                             continue
                     
-                    # Fallback: look for date pattern in page text
                     if not published_date:
                         try:
-                            # Apple sometimes shows dates like "JAN 25, 2026" near the episode info
                             page_text = browser.locator('main').first.text_content() or ""
-                            # Look for date patterns
-                            date_patterns = [
+                            for pattern in [
                                 r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}',
                                 r'(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{1,2},?\s+\d{4}',
-                            ]
-                            for pattern in date_patterns:
+                            ]:
                                 match = re.search(pattern, page_text, re.IGNORECASE)
                                 if match:
                                     published_date = self._parse_apple_date(match.group(0))
                                     if published_date:
-                                        logger.info(f"Found date from pattern: {published_date}")
                                         break
                         except Exception:
                             pass
                     
-                    # Extract LinkedIn URL from description (we only want the URL, not the text)
-                    desc_selectors = [
-                        '[data-testid="description"]',
-                        '.product-hero-desc',
-                        'section[class*="description"]',
-                    ]
-                    for selector in desc_selectors:
+                    for selector in ['[data-testid="description"]', '.product-hero-desc', 'section[class*="description"]']:
                         try:
                             desc_elem = browser.locator(selector).first
                             if desc_elem.count() > 0:
                                 desc_text = desc_elem.text_content() or ""
-                                # Only extract LinkedIn URL
                                 linkedin_match = re.search(r'https?://(?:www\.)?linkedin\.com/in/[a-zA-Z0-9_-]+', desc_text)
                                 if linkedin_match:
                                     linkedin_url = linkedin_match.group(0)
-                                    logger.info(f"Found LinkedIn URL: {linkedin_url}")
                                     break
                         except Exception:
                             continue
@@ -602,42 +453,72 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                 except Exception as e:
                     logger.debug(f"Could not get episode details: {e}")
             
-            # Sanity check: verify guest name appears in title
-            if guest_name and apple_title:
-                guest_name_lower = guest_name.lower()
-                apple_title_lower = apple_title.lower()
-                guest_parts = guest_name_lower.split()
-                matches = sum(1 for part in guest_parts if part in apple_title_lower)
-                if matches < len(guest_parts) // 2 + 1:
-                    logger.warning(f"Guest name mismatch! Dropbox: '{guest_name}', Apple title: '{apple_title}'. "
-                                   f"Skipping Apple enrichment to avoid mixing metadata.")
-                    return None
+            if not apple_title:
+                logger.warning("Could not extract episode title from Apple Podcasts")
+                return None
             
-            # Create enriched episode with clean data
-            enriched_guests = episode.guests
-            if enriched_guests:
-                # Update guest with LinkedIn URL if found
-                enriched_guests = [Guest(
-                    name=enriched_guests[0].name,
-                    linkedin_url=linkedin_url,  # Will be None if not found
-                    description=None
-                )]
+            logger.info(f"Latest Apple episode: {apple_title}")
             
-            return Episode(
-                guid=episode.guid,
-                podcast_id=episode.podcast_id,
-                title=apple_title or episode.title,
-                description="",  # Don't include description - we only need title/date/guest
-                published_date=published_date or episode.published_date,
-                episode_url=episode_url or episode.episode_url,
-                audio_url=episode.audio_url,
-                apple_podcasts_url=episode_url or episode.apple_podcasts_url,
-                guests=enriched_guests,
-                duration=episode.duration,
+            # --- Step 2: Extract guest name from Apple title ---
+            guest_name = None
+            if '|' in apple_title:
+                parts = apple_title.split('|')
+                if len(parts) > 1:
+                    guest_part = parts[-1].strip()
+                    guest_name = re.sub(r'\s*\([^)]+\)\s*$', '', guest_part).strip()
+            
+            if not guest_name or len(guest_name) < 3:
+                logger.warning(f"Could not extract guest name from Apple title: {apple_title}")
+                return None
+            
+            logger.info(f"Extracted guest name: {guest_name}")
+            
+            # --- Step 3: Find matching transcript in Dropbox ---
+            logger.info("Searching Dropbox for matching transcript...")
+            self._navigate_to_dropbox(browser)
+            
+            files = self._list_dropbox_files(browser)
+            if not files:
+                logger.warning("No files found in Dropbox folder")
+                return None
+            
+            matching_file = self._find_matching_file(files, guest_name)
+            if not matching_file:
+                logger.warning(f"No Dropbox transcript found matching guest: {guest_name}")
+                return None
+            
+            logger.info(f"Found matching transcript: {matching_file['name']}")
+            
+            # --- Step 4: Download the transcript ---
+            transcript = self._download_and_parse_file(browser, matching_file)
+            if not transcript:
+                logger.error(f"Failed to download transcript: {matching_file['name']}")
+                return None
+            
+            logger.info(f"Downloaded transcript ({len(transcript)} chars)")
+            
+            # --- Step 5: Build result ---
+            episode = Episode(
+                guid=f"dropbox-{matching_file['name']}",
+                podcast_id=podcast.id,
+                title=apple_title,
+                description="",
+                published_date=published_date,
+                episode_url=episode_url or podcast.website,
+                audio_url=None,
+                apple_podcasts_url=episode_url or podcast.apple_podcasts_url,
+                guests=[Guest(name=guest_name, linkedin_url=linkedin_url)],
+                duration=None,
+            )
+            
+            return DropboxEpisodeResult(
+                episode=episode,
+                transcript=transcript,
+                filename=matching_file['name']
             )
             
         except Exception as e:
-            logger.error(f"Error enriching from Apple Podcasts: {e}")
+            logger.error(f"Error detecting latest episode: {e}")
             return None
     
     def _parse_apple_date(self, date_str: str) -> Optional[datetime]:
