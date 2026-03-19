@@ -605,10 +605,27 @@ class LennysTranscriptStrategy(TranscriptStrategy):
         
         return None
     
+    def _scroll_to_load_all_files(self, page: Page, max_scrolls: int = 30) -> None:
+        """Scroll the Dropbox file list to trigger lazy loading of all files."""
+        prev_count = 0
+        for i in range(max_scrolls):
+            current_count = page.locator('table tbody tr').count()
+            if current_count == prev_count and i > 0:
+                logger.info(f"All files loaded after {i} scroll(s): {current_count} rows")
+                return
+            prev_count = current_count
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            page.wait_for_timeout(1500)
+        logger.info(f"Finished scrolling ({max_scrolls} iterations): {prev_count} rows loaded")
+    
     def _list_dropbox_files(self, page: Page) -> list[dict]:
         """List files in Dropbox folder with modified dates."""
         files = []
         try:
+            # Scroll to load all files — Dropbox lazy-loads and may only
+            # render 20-30 of 90+ files initially
+            self._scroll_to_load_all_files(page)
+            
             # Dropbox uses a table structure - find all rows
             # Each row contains: filename link, modified date, etc.
             file_rows = page.locator('table tbody tr').all()
