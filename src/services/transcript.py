@@ -393,9 +393,25 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                 logger.warning("No files found in Dropbox folder")
                 return None
             
-            # Get the first file (should be newest after sorting)
+            # Sort in Python by modified_date (newest first) as a reliable
+            # fallback — the UI button-click sorting is fragile
+            files_with_dates = [f for f in files if f.get('modified_date')]
+            files_without_dates = [f for f in files if not f.get('modified_date')]
+            
+            if not files_with_dates:
+                logger.warning(
+                    f"Could not parse modified dates for any of {len(files)} files — "
+                    f"relying on Dropbox UI sort order which may be incorrect"
+                )
+            else:
+                logger.info(f"Parsed dates for {len(files_with_dates)}/{len(files)} files")
+                files_with_dates.sort(key=lambda f: f['modified_date'], reverse=True)
+            
+            files = files_with_dates + files_without_dates
+            
             newest_file = files[0]
-            logger.info(f"Newest file in Dropbox: {newest_file['name']}")
+            logger.info(f"Newest file in Dropbox: {newest_file['name']} "
+                        f"(modified: {newest_file.get('modified_date', 'unknown')})")
             
             # Extract guest name from filename
             guest_name = self._extract_guest_from_filename(newest_file['name'])
@@ -593,7 +609,9 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                 guest_parts = guest_name_lower.split()
                 matches = sum(1 for part in guest_parts if part in apple_title_lower)
                 if matches < len(guest_parts) // 2 + 1:
-                    logger.warning(f"Guest name mismatch! Dropbox: '{guest_name}', Apple title: '{apple_title}'")
+                    logger.warning(f"Guest name mismatch! Dropbox: '{guest_name}', Apple title: '{apple_title}'. "
+                                   f"Skipping Apple enrichment to avoid mixing metadata.")
+                    return None
             
             # Create enriched episode with clean data
             enriched_guests = episode.guests
@@ -738,15 +756,18 @@ class LennysTranscriptStrategy(TranscriptStrategy):
                     if not clean_name:
                         continue
                     
-                    # Try to get modified date from the row
+                    # Try to get modified date from the row by scanning all cells
                     modified_date = None
                     try:
-                        # Dropbox shows modified date in a cell, look for time element or date text
-                        date_cell = row.locator('td').nth(1)  # Usually second column
-                        if date_cell.count() > 0:
-                            date_text = date_cell.text_content()
-                            if date_text:
-                                modified_date = self._parse_dropbox_date(date_text.strip())
+                        all_cells = row.locator('td').all()
+                        for cell in all_cells:
+                            cell_text = (cell.text_content() or "").strip()
+                            if not cell_text or clean_name in cell_text:
+                                continue
+                            parsed = self._parse_dropbox_date(cell_text)
+                            if parsed:
+                                modified_date = parsed
+                                break
                     except Exception:
                         pass
                     
@@ -815,22 +836,50 @@ class LennysTranscriptStrategy(TranscriptStrategy):
         if not date_str:
             return None
         
-        # Dropbox uses formats like:
-        # - "Jan 15, 2026"
-        # - "Yesterday"
-        # - "Today"
-        # - "Jan 15"
+        from datetime import timedelta
         
         date_str = date_str.strip()
+        now = datetime.now()
+        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # Handle relative dates
-        if date_str.lower() == 'today':
-            return datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        if date_str.lower() == 'yesterday':
-            from datetime import timedelta
-            return (datetime.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        lower = date_str.lower()
         
-        # Try various date formats
+        if lower == 'today':
+            return today
+        if lower == 'yesterday':
+            return today - timedelta(days=1)
+        
+        # Relative: "X day(s) ago"
+        m = re.match(r'^(\d+)\s+days?\s+ago$', lower)
+        if m:
+            return today - timedelta(days=int(m.group(1)))
+        
+        # Relative: "X week(s) ago"
+        m = re.match(r'^(\d+)\s+weeks?\s+ago$', lower)
+        if m:
+            return today - timedelta(weeks=int(m.group(1)))
+        
+        # Relative: "last week"
+        if lower == 'last week':
+            return today - timedelta(weeks=1)
+        
+        # Relative: "X month(s) ago" or "last month"
+        if lower == 'last month':
+            month = now.month - 1 or 12
+            year = now.year if now.month > 1 else now.year - 1
+            return today.replace(year=year, month=month, day=1)
+        
+        m = re.match(r'^(\d+)\s+months?\s+ago$', lower)
+        if m:
+            months_ago = int(m.group(1))
+            month = now.month - months_ago
+            year = now.year
+            while month <= 0:
+                month += 12
+                year -= 1
+            return today.replace(year=year, month=month, day=1)
+        
+        # Absolute date formats
         formats = [
             "%b %d, %Y",  # Jan 15, 2026
             "%B %d, %Y",  # January 15, 2026
@@ -841,9 +890,8 @@ class LennysTranscriptStrategy(TranscriptStrategy):
         for fmt in formats:
             try:
                 parsed = datetime.strptime(date_str, fmt)
-                # If no year in format, use current year
                 if parsed.year == 1900:
-                    parsed = parsed.replace(year=datetime.now().year)
+                    parsed = parsed.replace(year=now.year)
                 return parsed
             except ValueError:
                 continue
