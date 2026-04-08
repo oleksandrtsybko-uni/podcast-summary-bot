@@ -1,9 +1,9 @@
 {
   "lennys-podcast": {
-    "guid": "Claire Vo OpenClaw.txt",
-    "title": "From skeptic to true believer: How OpenClaw changed my life | Claire Vo",
-    "published_date": "2026-03-29T00:00:00",
-    "processed_at": "2026-04-01T08:15:58.721987"
+    "guid": "Amol Avasare.txt",
+    "title": "Head of Growth (Anthropic):\u00a0\u201cClaude is growing itself at this point\u201d | Amol Avasare",
+    "published_date": "2026-04-05T00:00:00",
+    "processed_at": "2026-04-08T08:13:06.540190"
   },
   "sub-club": {
     "guid": "a0be5258-0cda-4de7-ba01-1b21c149fb80",
@@ -12,9 +12,9 @@
     "processed_at": "2026-04-01T08:16:17.315904"
   },
   "20vc": {
-    "guid": "2552a785-92cb-475a-8926-605c322e791c",
-    "title": "20VC: Marc Andreessen on The Future of Venture Capital: Will a16z Go Public | Why Labour Displacement with AI is Wrong | Why Introspection is Dangerous | Why \"Diamonds in the Rough\" is BS in VC | Why a16z Invested $300M into Adam Neumann",
-    "published_date": "2026-03-30T07:07:00",
-    "processed_at": "2026-04-01T08:21:18.750494"
+    "guid": "25fbf200-afed-456f-a54c-5ef6621b7b55",
+    "title": "20VC: DeepMind's Demis Hassabis on Why AGI is Bigger than the Industrial Revolution | Why LLMs Will Not Commoditise & We Have Not Hit Scaling Laws | Bottlenecks in AI & The Energy Crisis Caused By AI | Whether AI Will Do More to Harm or Help Inequality",
+    "published_date": "2026-04-07T07:07:00",
+    "processed_at": "2026-04-08T08:15:52.983771"
   }
 }
