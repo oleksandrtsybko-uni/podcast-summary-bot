@@ -1,20 +1,20 @@
 {
   "lennys-podcast": {
-    "guid": "Amol Avasare.txt",
-    "title": "Head of Growth (Anthropic):\u00a0\u201cClaude is growing itself at this point\u201d | Amol Avasare",
-    "published_date": "2026-04-05T00:00:00",
-    "processed_at": "2026-04-08T08:13:06.540190"
+    "guid": "Keith Rabois.txt",
+    "title": "Hard truths about building in the AI era | Keith Rabois (Khosla Ventures)",
+    "published_date": "2026-04-12T00:00:00",
+    "processed_at": "2026-04-15T08:27:52.230051"
   },
   "sub-club": {
-    "guid": "a0be5258-0cda-4de7-ba01-1b21c149fb80",
-    "title": "How the World's #1 VPN App Reached 1 Billion Downloads - Tanuj Chatterjee, Super Unlimited",
-    "published_date": "2026-04-01T08:00:00",
-    "processed_at": "2026-04-01T08:16:17.315904"
+    "guid": "69e7419a-f7ed-4219-bdad-486b13cb9b0e",
+    "title": "12 AI Growth Lessons for Subscription Apps - Phil Carter, Elemental Growth",
+    "published_date": "2026-04-15T08:00:00",
+    "processed_at": "2026-04-15T08:28:11.213939"
   },
   "20vc": {
-    "guid": "25fbf200-afed-456f-a54c-5ef6621b7b55",
-    "title": "20VC: DeepMind's Demis Hassabis on Why AGI is Bigger than the Industrial Revolution | Why LLMs Will Not Commoditise & We Have Not Hit Scaling Laws | Bottlenecks in AI & The Energy Crisis Caused By AI | Whether AI Will Do More to Harm or Help Inequality",
-    "published_date": "2026-04-07T07:07:00",
-    "processed_at": "2026-04-08T08:15:52.983771"
+    "guid": "efc641d1-d5b0-4a01-8b5d-a81181005a79",
+    "title": "20VC: Anj Midha on Investing $300M into Anthropic | The Early Days of Anthropic & How 21 of 22 VCs Turned it Down | The Four Bottlenecks to Compute | What the China Has Smashed and Why We Should Be Worried",
+    "published_date": "2026-04-14T09:24:00",
+    "processed_at": "2026-04-15T08:32:59.583971"
   }
 }
