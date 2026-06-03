@@ -1,9 +1,9 @@
 {
   "lennys-podcast": {
-    "guid": "Dan Shipper 2.0.txt",
-    "title": "The AI paradox: More automation, more humans, more work | Dan Shipper",
-    "published_date": "2026-05-24T00:00:00",
-    "processed_at": "2026-05-27T10:54:33.186730"
+    "guid": "Benedict Evans.txt",
+    "title": "A rational conversation on where AI is actually going | Benedict Evans",
+    "published_date": "2026-05-31T00:00:00",
+    "processed_at": "2026-06-03T11:55:02.640962"
   },
   "sub-club": {
     "guid": "4cdddc0c-a8d6-4aae-92b4-406158be9772",
@@ -12,9 +12,9 @@
     "processed_at": "2026-05-27T10:54:51.105191"
   },
   "20vc": {
-    "guid": "5de91af6-e9d5-4f32-af81-37c51f646ffc",
-    "title": "20VC: Cerebras CEO on the Future of Data Centres, Token Costs and Memory | We are Not in an Infra Bubble & Dario Got a Bad Deal with Elon for Compute | Should US Companies Sell to China & Why Most Layoffs are AI Washed with Andrew Feldman",
-    "published_date": "2026-05-26T07:07:00",
-    "processed_at": "2026-05-27T10:59:08.754867"
+    "guid": "77f713a1-8bc7-44b3-a33d-6d9eaa0d4ea0",
+    "title": "20VC: Mercor CEO on Why Application Layer Companies Have No Defensibility, The Model is the Product | Token Spend Will Exceed Headcount Spend in 5 Years | The True Cost of Hiring AI Researchers in the Valley Today with Brendan Foody",
+    "published_date": "2026-06-01T07:07:00",
+    "processed_at": "2026-06-03T12:00:06.637203"
   }
 }
