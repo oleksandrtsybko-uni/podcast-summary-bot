@@ -1,20 +1,20 @@
 {
   "lennys-podcast": {
-    "guid": "Benedict Evans.txt",
-    "title": "A rational conversation on where AI is actually going | Benedict Evans",
-    "published_date": "2026-05-31T00:00:00",
-    "processed_at": "2026-06-03T11:55:02.640962"
+    "guid": "Mark Pincus.txt",
+    "title": "The hidden pattern behind successful products | Mark Pincus (founder of Zynga)",
+    "published_date": "2026-06-14T00:00:00",
+    "processed_at": "2026-06-17T11:45:28.066200"
   },
   "sub-club": {
-    "guid": "4cdddc0c-a8d6-4aae-92b4-406158be9772",
-    "title": "How Removing the Free Trial Grew Monthly Subs 2000% - Nancy Anderson, Natal",
-    "published_date": "2026-05-27T08:00:00",
-    "processed_at": "2026-05-27T10:54:51.105191"
+    "guid": "690743ca-a35a-40c1-b6a9-acc83c9ed405",
+    "title": "WWDC 2026: What Subscription Apps Need To Know",
+    "published_date": "2026-06-15T17:07:33",
+    "processed_at": "2026-06-17T11:45:45.371893"
   },
   "20vc": {
-    "guid": "22c7f238-4fe6-471f-900e-5bfb2f75b721",
-    "title": "20VC: Nebius Co-Founder on AI Infrastructure Bubbles | The Real Impact of Open Source on OpenAI & Anthropic | How Price Elastic is Demand for Compute | Could Nebius Sell 10x More Compute If They Had It & more with Roman Chernin",
-    "published_date": "2026-06-08T07:07:00",
-    "processed_at": "2026-06-10T10:58:32.589919"
+    "guid": "79363c00-a9af-442e-9c85-77228346fa13",
+    "title": "20VC: Micron Will Be More Valuable Than Meta | How Export Controls Helped Not Hurt China | Power is the Bottleneck to AI | Why Dario Has Done a Disservice to AI with his Labour Replacement Messaging with Aravind Srinivas, Founder @ Perplexity",
+    "published_date": "2026-06-15T07:09:00",
+    "processed_at": "2026-06-17T11:51:40.128278"
   }
 }
