@@ -1,20 +1,20 @@
 {
   "lennys-podcast": {
-    "guid": "Mark Pincus.txt",
-    "title": "The hidden pattern behind successful products | Mark Pincus (founder of Zynga)",
-    "published_date": "2026-06-14T00:00:00",
-    "processed_at": "2026-06-17T11:45:28.066200"
+    "guid": "Fiona Fung.txt",
+    "title": "What happens after coding is solved? | Fiona Fung (Manager of the Claude Code and Cowork Teams)",
+    "published_date": "2026-06-21T00:00:00",
+    "processed_at": "2026-06-24T10:20:57.342345"
   },
   "sub-club": {
-    "guid": "690743ca-a35a-40c1-b6a9-acc83c9ed405",
-    "title": "WWDC 2026: What Subscription Apps Need To Know",
-    "published_date": "2026-06-15T17:07:33",
-    "processed_at": "2026-06-17T11:45:45.371893"
+    "guid": "5b0ae9eb-0f14-4526-9b25-af1f64675a82",
+    "title": "How Simply Finally Cracked Facebook Ads with Web Funnels - Yoav Sharon, Simply",
+    "published_date": "2026-06-24T08:00:00",
+    "processed_at": "2026-06-24T10:21:22.893321"
   },
   "20vc": {
-    "guid": "79363c00-a9af-442e-9c85-77228346fa13",
-    "title": "20VC: Micron Will Be More Valuable Than Meta | How Export Controls Helped Not Hurt China | Power is the Bottleneck to AI | Why Dario Has Done a Disservice to AI with his Labour Replacement Messaging with Aravind Srinivas, Founder @ Perplexity",
-    "published_date": "2026-06-15T07:09:00",
-    "processed_at": "2026-06-17T11:51:40.128278"
+    "guid": "7e804a61-b12d-4cf4-bae5-5a0d0b304843",
+    "title": "20VC: Nikesh Arora on the Frontier Model Problem: Breadth vs Depth | The Future of Token Costs | Memory Becoming the Moat | Where Value Accrues: Infra, Models, or Apps? | Why Enterprise AI is Not Ready & Systems of Record vs Systems of Intelligence",
+    "published_date": "2026-06-22T07:07:00",
+    "processed_at": "2026-06-24T10:27:06.489977"
   }
 }
