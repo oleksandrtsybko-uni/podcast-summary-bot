@@ -1,9 +1,9 @@
 {
   "lennys-podcast": {
-    "guid": "Fiona Fung.txt",
-    "title": "What happens after coding is solved? | Fiona Fung (Manager of the Claude Code and Cowork Teams)",
-    "published_date": "2026-06-21T00:00:00",
-    "processed_at": "2026-06-24T10:20:57.342345"
+    "guid": "Andrew Ambrosino.txt",
+    "title": "OpenAI Codex lead on the new shape of product work | Andrew Ambrosino",
+    "published_date": "2026-06-28T00:00:00",
+    "processed_at": "2026-07-01T10:40:15.399299"
   },
   "sub-club": {
     "guid": "5b0ae9eb-0f14-4526-9b25-af1f64675a82",
@@ -12,9 +12,9 @@
     "processed_at": "2026-06-24T10:21:22.893321"
   },
   "20vc": {
-    "guid": "7e804a61-b12d-4cf4-bae5-5a0d0b304843",
-    "title": "20VC: Nikesh Arora on the Frontier Model Problem: Breadth vs Depth | The Future of Token Costs | Memory Becoming the Moat | Where Value Accrues: Infra, Models, or Apps? | Why Enterprise AI is Not Ready & Systems of Record vs Systems of Intelligence",
-    "published_date": "2026-06-22T07:07:00",
-    "processed_at": "2026-06-24T10:27:06.489977"
+    "guid": "b6db2af2-44c6-4a13-85cb-31c2f19dd667",
+    "title": "20VC: Leo Aschenbrenner's Largest Holding: Inside the $90BN Bloom Energy | Why Electricity, Not AI Models, Will Decide the Winners of the AI Race | Why We Are Not in an AI Capex Bubble | Energy Sovereignty and The Future of Power with KR Sridhar",
+    "published_date": "2026-06-29T07:07:00",
+    "processed_at": "2026-07-01T10:44:03.219663"
   }
 }
