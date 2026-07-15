@@ -1,9 +1,9 @@
 {
   "lennys-podcast": {
-    "guid": "Andrew Ambrosino.txt",
-    "title": "OpenAI Codex lead on the new shape of product work | Andrew Ambrosino",
-    "published_date": "2026-06-28T00:00:00",
-    "processed_at": "2026-07-01T10:40:15.399299"
+    "guid": "Caitlin Kalinowski.txt",
+    "title": "How tech workers actually feel about AI in 2026 | Annual AI sentiment survey (Noam Segal)",
+    "published_date": "2026-07-12T00:00:00",
+    "processed_at": "2026-07-15T09:09:02.364892"
   },
   "sub-club": {
     "guid": "20dc2040-1d3d-44a6-9c3d-9a2d91f6b92e",
@@ -12,9 +12,9 @@
     "processed_at": "2026-07-08T09:24:18.981518"
   },
   "20vc": {
-    "guid": "f2ca0fc1-6117-43b2-bf77-5327c1816781",
-    "title": "20VC: Why Now is the Time for the Application Layer | Why OpenAI & Anthropic Won't Win the App Layer | Why Startups Should be TokenMaxxing | Why VCs Should Reduce Weighting on Price & Ownership in an Age of AI with Mike Mignano, USV",
-    "published_date": "2026-07-06T07:07:00",
-    "processed_at": "2026-07-08T09:29:36.618755"
+    "guid": "925ad6e6-fb15-4e44-93a1-e03e414d7a82",
+    "title": "20VC: Wix's Founder on What Wall St Gets Wrong About AI and Wix | Will Base44 Win the Vibe Coding Wars | The Truth About the Economics of Vibe-Coding | The Buyback Disaster: Lessons Learned with Avishai Abrahami",
+    "published_date": "2026-07-13T07:07:00",
+    "processed_at": "2026-07-15T09:12:51.996355"
   }
 }
