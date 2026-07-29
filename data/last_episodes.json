@@ -1,9 +1,9 @@
 {
   "lennys-podcast": {
-    "guid": "Elizabeth Stone 2.0.txt",
-    "title": "Why Netflix is betting on systems thinkers\u2014not specialists\u2014in the AI era | Elizabeth Stone (CPTO)",
-    "published_date": "2026-07-19T00:00:00",
-    "processed_at": "2026-07-22T09:24:47.399437"
+    "guid": "Dianne Penn.txt",
+    "title": "Anthropic\u2019s first technical PM on token maxing, the jagged edge, and living in the future | Dianne Penn",
+    "published_date": "2026-07-26T00:00:00",
+    "processed_at": "2026-07-29T09:35:50.222566"
   },
   "sub-club": {
     "guid": "fff70a43-8457-4054-b186-2eaafb07ce07",
@@ -12,9 +12,9 @@
     "processed_at": "2026-07-22T09:25:04.191864"
   },
   "20vc": {
-    "guid": "77ac8acc-f378-4a16-890d-fad9ef4d34d3",
-    "title": "20VC: Are OpenAI and Anthropic Overvalued? The Open-Source AI Reality | How Token Costs Will Fall 10x And Usage Will Explode 100x | The Future Is Not One AGI; It's Millions of Specialised Models with Lin Qiao, Founder and CEO @ Fireworks",
-    "published_date": "2026-07-20T07:07:00",
-    "processed_at": "2026-07-22T09:29:57.525327"
+    "guid": "382275b1-de4a-44d8-815f-ab886c3b108d",
+    "title": "20VC: Leading Anthropic's First Ever Round | Will Open Source Threaten Anthropic's Business | Do Margins Matter in a World of AI | Why Triple, Triple, Double, Double is Not Good Enough Today | Why Series A is Hard Today with Matt Murphy @ Menlo",
+    "published_date": "2026-07-27T07:07:00",
+    "processed_at": "2026-07-29T09:40:51.866175"
   }
 }
