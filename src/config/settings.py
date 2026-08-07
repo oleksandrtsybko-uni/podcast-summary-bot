@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     # OpenAI Configuration
     openai_api_key: str = Field(..., description="OpenAI API key")
     openai_model: str = Field(
-        default="gpt-4o",
+        default="gpt-5.6-luna",
         description="OpenAI model for summaries"
     )
     

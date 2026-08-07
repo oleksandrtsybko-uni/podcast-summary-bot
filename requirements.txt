@@ -15,8 +15,9 @@ lxml>=5.0.0
 # Browser Automation (for JavaScript-rendered transcripts)
 playwright>=1.40.0
 
-# OpenAI API (GPT-4 for summaries, Whisper for transcription)
-openai>=1.0.0
+# OpenAI API (GPT-5.6 for summaries, Whisper for transcription)
+# >=1.60 needed for max_completion_tokens (GPT-5.x)
+openai>=1.60.0
 
 # Audio Processing (for splitting large audio files for Whisper)
 pydub>=0.25.1

@@ -1,5 +1,5 @@
 """
-AI summarization service using OpenAI GPT-4.
+AI summarization service using OpenAI GPT-5.6.
 Generates structured summaries from podcast transcripts.
 """
 
@@ -14,7 +14,7 @@ from ..utils.helpers import clean_html, truncate_text
 logger = get_logger(__name__)
 
 # Maximum context length for transcript (to manage token usage)
-MAX_TRANSCRIPT_LENGTH = 150000  # ~37k tokens approximately (GPT-4o supports 128k context)
+MAX_TRANSCRIPT_LENGTH = 150000  # ~37k tokens approximately (GPT-5.6 supports 1M context)
 
 # Summary prompt template
 SUMMARY_PROMPT = """You are an expert podcast analyst. Create a structured, bullet-point summary of the transcript below.
@@ -216,8 +216,9 @@ class Summarizer:
                         "content": prompt
                     }
                 ],
-                temperature=0.3,
-                max_tokens=6000,
+                # GPT-5.x models only accept the default temperature, and use
+                # max_completion_tokens (reasoning tokens count against it).
+                max_completion_tokens=16000,
             )
             
             summary = response.choices[0].message.content
