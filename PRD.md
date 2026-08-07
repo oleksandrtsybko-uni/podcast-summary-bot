@@ -83,7 +83,7 @@ An automated bot that runs weekly (Thursdays) to:
 - **Character Limit:** 100,000 characters max for summarization (~25k tokens)
 
 ### 5.5 AI Summary Generation (FR-005)
-- **Requirement:** Generate structured summary using OpenAI GPT-4o
+- **Requirement:** Generate structured summary using OpenAI GPT-5.6 Luna
 - **Input:** Episode transcript only
 - **Fallback Behavior:** If transcript is "Transcript not found", summary shows "Transcript not found" (no description-based summary)
 - **Summary Structure (bullet-point format):**

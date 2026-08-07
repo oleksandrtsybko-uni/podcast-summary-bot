@@ -31,7 +31,7 @@ Create an intelligent, low-maintenance automation system that keeps busy profess
           ▼              ▼              ▼              ▼
     ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
     │  Podcast │   │  Apple   │   │  OpenAI  │   │ Telegram │
-    │RSS Feeds │   │ Podcasts │   │   GPT-4  │   │   API    │
+    │RSS Feeds │   │ Podcasts │   │ GPT-5.6  │   │   API    │
     └──────────┘   │   Web    │   └──────────┘   └──────────┘
                    └──────────┘
 ```
@@ -94,7 +94,7 @@ src/
 | Package | Purpose | Version |
 |---------|---------|---------|
 | `feedparser` | RSS feed parsing | ^6.0 |
-| `openai` | GPT-4o API for summaries + Whisper for transcription | ^1.0 |
+| `openai` | GPT-5.6 Luna API for summaries + Whisper for transcription | ^1.60 |
 | `requests` | Telegram HTTP API calls | ^2.32 |
 | `httpx` | Async HTTP client | ^0.27 |
 | `beautifulsoup4` | HTML parsing (Apple Podcasts transcripts) | ^4.12 |
@@ -107,7 +107,7 @@ src/
 | Service | Purpose | Cost |
 |---------|---------|------|
 | GitHub Actions | Scheduled execution | Free (public repos) |
-| OpenAI API | GPT-4 summaries | ~$0.01-0.05/episode |
+| OpenAI API | GPT-5.6 Luna summaries | ~$0.05-0.25/episode |
 | Telegram Bot API | Message delivery | Free |
 | Apple Podcasts Web | Transcript scraping | Free |
 
@@ -122,7 +122,7 @@ src/
 
 ### Services (Free Accounts Required)
 - [ ] **GitHub Account** - Repository & Actions
-- [ ] **OpenAI Account** - API key for GPT-4 and Whisper
+- [ ] **OpenAI Account** - API key for GPT-5.6 Luna and Whisper
 - [ ] **Telegram Account** - Create bot via @BotFather
 
 ### API Keys Needed
@@ -171,7 +171,7 @@ The Dropbox transcript fetcher uses a robust navigation approach to handle CI en
 | Service | Usage | Estimated Cost |
 |---------|-------|----------------|
 | GitHub Actions | ~10 min/week | $0 (free tier) |
-| OpenAI GPT-4o + Whisper | ~3 summaries/week + audio transcription | ~$2-5 |
+| OpenAI GPT-5.6 Luna + Whisper | ~3 summaries/week + audio transcription | ~$2-5 |
 | Telegram | Unlimited messages | $0 |
 | **Total** | | **~$2-5/month** |
 
@@ -219,7 +219,7 @@ PODCASTS = [
 OPENAI_API_KEY: "sk-..."
 TELEGRAM_BOT_TOKEN: "123456:ABC..."
 TELEGRAM_CHAT_ID: "-100123456789"
-SUMMARY_MODEL: "gpt-4-turbo-preview"
+OPENAI_MODEL: "gpt-5.6-luna"
 CHECK_DAY: "thursday"
 CHECK_HOUR: 9
 TIMEZONE: "UTC"

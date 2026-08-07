@@ -6,7 +6,7 @@ An automated bot that monitors your favorite podcasts, detects new episodes, gen
 
 - 📡 **RSS Feed Monitoring** - Automatically checks podcast feeds for new episodes
 - 📝 **Transcript Extraction** - Uses podcast-specific methods: Dropbox archive (Lenny's), Apple Podcasts scraping (Sub Club), or Whisper AI transcription (20VC)
-- 🤖 **AI Summaries** - Generates structured summaries using OpenAI GPT-4
+- 🤖 **AI Summaries** - Generates structured summaries using OpenAI GPT-5.6 Luna
 - 📱 **Telegram Delivery** - Sends beautifully formatted summaries to your Telegram
 - ⏰ **Scheduled Runs** - Runs automatically via GitHub Actions (Thursdays at 09:00 UTC)
 - 💰 **Low Cost** - Operates within free tiers (~$1-3/month for OpenAI)
@@ -205,7 +205,7 @@ A comprehensive discussion about product development...
 | Service | Monthly Cost |
 |---------|-------------|
 | GitHub Actions | Free |
-| OpenAI GPT-4 | ~$1-3 |
+| OpenAI GPT-5.6 Luna | ~$1-3 |
 | Telegram | Free |
 | **Total** | **~$1-3** |
 

@@ -13,8 +13,18 @@ from ..utils.helpers import clean_html, truncate_text
 
 logger = get_logger(__name__)
 
-# Maximum context length for transcript (to manage token usage)
-MAX_TRANSCRIPT_LENGTH = 150000  # ~37k tokens approximately (GPT-5.6 supports 1M context)
+# Maximum transcript length sent to the model.
+# GPT-5.6 has a 1M-token context, so this is NOT a context limit — it is a cost
+# fuse against a runaway transcript (a scraper looping on a page, Whisper
+# stuttering a repeated phrase). Real episodes top out around 150k chars.
+MAX_TRANSCRIPT_LENGTH = 500000  # ~125k tokens, ~$0.13 of input at Luna pricing
+
+# Output budget. Reasoning tokens are billed as output and count against this.
+MAX_OUTPUT_TOKENS = 16000
+
+# GPT-5.x defaults to "medium"; restructuring a transcript we already supply
+# does not need that much deliberation, and reasoning bills at the output rate.
+REASONING_EFFORT = "low"
 
 # Summary prompt template
 SUMMARY_PROMPT = """You are an expert podcast analyst. Create a structured, bullet-point summary of the transcript below.
@@ -217,20 +227,41 @@ class Summarizer:
                     }
                 ],
                 # GPT-5.x models only accept the default temperature, and use
-                # max_completion_tokens (reasoning tokens count against it).
-                max_completion_tokens=16000,
+                # max_completion_tokens instead of max_tokens.
+                max_completion_tokens=MAX_OUTPUT_TOKENS,
+                reasoning_effort=REASONING_EFFORT,
             )
-            
-            summary = response.choices[0].message.content
-            
+
+            choice = response.choices[0]
+            summary = choice.message.content
+
             # Log token usage
             if response.usage:
+                details = getattr(response.usage, "completion_tokens_details", None)
+                reasoning_tokens = getattr(details, "reasoning_tokens", None)
                 logger.info(
                     f"API usage - Prompt: {response.usage.prompt_tokens}, "
-                    f"Completion: {response.usage.completion_tokens}, "
-                    f"Total: {response.usage.total_tokens}"
+                    f"Completion: {response.usage.completion_tokens} "
+                    f"(reasoning: {reasoning_tokens}), "
+                    f"Total: {response.usage.total_tokens}, "
+                    f"Finish reason: {choice.finish_reason}"
                 )
-            
+
+            # A reasoning model can burn the whole output budget before writing
+            # any summary. Fail loudly rather than posting an empty message.
+            if choice.finish_reason == "length":
+                raise RuntimeError(
+                    f"Model hit the {MAX_OUTPUT_TOKENS} token output budget before "
+                    f"finishing the summary. Raise MAX_OUTPUT_TOKENS or lower "
+                    f"REASONING_EFFORT."
+                )
+
+            if not summary or not summary.strip():
+                raise RuntimeError(
+                    f"Model returned an empty summary "
+                    f"(finish_reason={choice.finish_reason})."
+                )
+
             return summary.strip()
             
         except Exception as e:
