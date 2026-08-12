@@ -202,16 +202,30 @@ def split_message(text: str, max_length: int = 4096) -> list[str]:
                 chunks.append(current_chunk.strip())
                 current_chunk = ""
             
-            # If single paragraph is too long, split by sentences
+            # If single paragraph is too long, split by lines. Splitting on
+            # sentences here would swallow the newlines and collapse bulleted
+            # sections into one unreadable run-on line.
             if len(paragraph) > max_length:
-                sentences = re.split(r'(?<=[.!?])\s+', paragraph)
-                for sentence in sentences:
-                    if len(current_chunk) + len(sentence) + 1 > max_length:
+                for line in paragraph.split('\n'):
+                    if len(current_chunk) + len(line) + 1 > max_length:
                         if current_chunk:
                             chunks.append(current_chunk.strip())
-                        current_chunk = sentence
+                            current_chunk = ""
+
+                        # A single line over the limit is the only case where
+                        # we fall back to sentences.
+                        if len(line) > max_length:
+                            for sentence in re.split(r'(?<=[.!?])\s+', line):
+                                if len(current_chunk) + len(sentence) + 1 > max_length:
+                                    if current_chunk:
+                                        chunks.append(current_chunk.strip())
+                                    current_chunk = sentence
+                                else:
+                                    current_chunk += " " + sentence if current_chunk else sentence
+                        else:
+                            current_chunk = line
                     else:
-                        current_chunk += " " + sentence if current_chunk else sentence
+                        current_chunk += "\n" + line if current_chunk else line
             else:
                 current_chunk = paragraph
         else:

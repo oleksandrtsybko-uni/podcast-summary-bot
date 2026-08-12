@@ -26,68 +26,50 @@ MAX_OUTPUT_TOKENS = 16000
 # does not need that much deliberation, and reasoning bills at the output rate.
 REASONING_EFFORT = "low"
 
+# Length budget. Telegram splits at 3996 chars/message and the episode header
+# costs ~450, so two messages leave ~7400 chars for the summary itself. We ask
+# the model for ~900 words (~5.5k chars) and keep the rest as headroom.
+SUMMARY_TARGET_WORDS = 900
+MAX_SUMMARY_CHARS = 7000
+
 # Summary prompt template
-SUMMARY_PROMPT = """You are an expert podcast analyst. Create a structured, bullet-point summary of the transcript below.
+SUMMARY_PROMPT = """Summarize the podcast transcript below for someone who did not listen to the episode.
 
-Hard rules:
-- Use ONLY information explicitly stated in the transcript. Do not add assumptions, background, or advice not present in the text.
-- If a detail is uncertain or implied but not said, mark it as "unclear" instead of guessing.
-- Keep it informational and specific (facts, claims, examples, numbers, definitions, decisions, tradeoffs). Avoid generic advice. Prefer concrete details, examples, and constraints.
-- No narrative article style. No long paragraphs.
+Grounding:
+- Use only what is explicitly stated in the transcript. Do not add background, advice, or inference of your own.
+- If something is implied but never said, leave it out rather than guessing.
+- Favour concrete detail over generalities: numbers, names, tools, examples, decisions, tradeoffs.
 
-Output format (use this exact structure):
+Length: at most {target_words} words in total. Selecting what matters is part of the
+task. A shorter summary covering the most important material beats a complete one.
 
-1) Key blocks (grouped by storyline)
-For each block:
-- Headline takeaway (must read like a point, not a topic)
-  - What they said (2–4 bullets)
-  - Context: what problem/constraint led to this (1–2 bullets)
-  - Example(s) / specifics: (numbers, experiments, product flows, tool names, partners, etc.) (1–4 bullets)
-  - Tradeoffs / caveats / disagreements mentioned (0–3 bullets)
-  - "So what": implication stated or clearly explained in the transcript (1–2 bullets)
+Format: plain text only. Do not use Markdown — no #, *, _, backticks or ---.
+Start bullets with "•" and indent sub-bullets by two spaces. Write section
+headings as plain words on their own line.
 
-IMPORTANT: Your block headline should summarize the story of that section.
-Examples:
-- "Ads were introduced without hurting UX by controlling quality via direct partners"
-- "The first IAP experiment was streak repair; expansion came later"
+Structure:
 
+KEY POINTS
 
-2) Actionable takeaways mentioned
-- What they recommend doing:
-  - Context (when/why)
-  - Expected outcome / metric (if mentioned)
-- What they recommend avoiding:
-  - Context
+At most 5 blocks, covering the 5 most important storylines of the episode.
+Anything that does not earn one of those places is left out. Each block is:
 
-3) Experiments / AB tests / tactics described
-- Experiment/tactic:
-  - Trigger / condition
-  - Implementation details
-  - Result / impact (if mentioned)
+• A headline that states the point itself rather than naming the topic.
+  Write "Ads were introduced without hurting UX by controlling quality via
+  direct partners", not "On advertising".
+  • Up to 4 bullets on what was actually said, one line each.
+  • Up to 2 bullets on the problem or constraint that led to it.
+  • Up to 2 bullets of specifics: numbers, experiments, tools, partners, flows.
+  • Up to 2 bullets on tradeoffs, caveats or disagreements that came up.
 
-4) Workflows & process (expand every step)
-If the transcript describes any workflow/process, present it as:
+Drop any of those four categories the transcript does not support. An empty
+category should disappear entirely — never announce that something is missing.
 
-- Workflow name (as described in the podcast)
-  - Goal of the workflow (as stated)
-  - Trigger: when/why they run this workflow (as stated)
-  - Step-by-step:
-    - Step 1 — <step name exactly as said>
-      - What this means in their words (explain using transcript wording)
-      - How they do it (tools/systems mentioned, e.g., Linear/Cursor/Slack/etc.)
-      - Output/artifact produced (ticket/doc/PR/etc.) — if stated
-      - Example from transcript — if stated
-      - If any of the above is missing: "Not specified in transcript"
-    - Step 2 — …
-  - Hand-offs / roles involved (if stated)
-  - Quality checks / review loops (if stated)
+WHAT THEY RECOMMEND
 
-CRITICAL: Do not leave steps as vague labels.
-If "Explore idea" is mentioned, you MUST look for:
-- how they explore (e.g., prototype, doc, AI tool, brainstorming method)
-- where (Linear doc, Cursor, PRD, whiteboard, etc.)
-- what output they produce
-If not found, write "Not specified in transcript" + clarifying questions.
+• Up to 5 things they recommend doing, one line each, with the stated condition
+  or expected outcome where one was given.
+• Up to 3 things they warn against, one line each.
 
 Transcript:
 {transcript}"""
@@ -105,9 +87,10 @@ DESCRIPTION_SUMMARY_PROMPT = """You are an expert podcast summarizer. Based on t
 
 **Instructions:**
 1. Summarize the main topics and themes of this episode based on the description
-2. Keep the summary to 2-3 paragraphs
+2. Keep the summary to 2-3 short paragraphs
 3. Note that this is based on the description only (full transcript was unavailable)
 4. Highlight what listeners can expect to learn
+5. Plain text only — no Markdown, no #, *, _ or backticks
 
 **Summary:**"""
 
@@ -170,7 +153,10 @@ class Summarizer:
             transcript = truncate_text(transcript, MAX_TRANSCRIPT_LENGTH, "... [transcript truncated]")
         
         # Build prompt
-        prompt = SUMMARY_PROMPT.format(transcript=transcript)
+        prompt = SUMMARY_PROMPT.format(
+            transcript=transcript,
+            target_words=SUMMARY_TARGET_WORDS,
+        )
         
         return self._call_api(prompt)
     
@@ -262,8 +248,48 @@ class Summarizer:
                     f"(finish_reason={choice.finish_reason})."
                 )
 
-            return summary.strip()
-            
+            return self._fit_to_budget(summary.strip())
+
         except Exception as e:
             logger.error(f"Error calling OpenAI API: {e}")
             raise
+
+    def _fit_to_budget(self, summary: str) -> str:
+        """
+        Trim a summary that overshot MAX_SUMMARY_CHARS.
+
+        The prompt asks for ~900 words, but a prompt is a request, not a
+        guarantee. This is the deterministic backstop that keeps delivery to two
+        Telegram messages. Trailing paragraphs go first, so the least important
+        sections are what fall off.
+
+        Args:
+            summary: Generated summary
+
+        Returns:
+            Summary within the character budget
+        """
+        if len(summary) <= MAX_SUMMARY_CHARS:
+            return summary
+
+        marker = "\n\n[trimmed to fit Telegram]"
+        budget = MAX_SUMMARY_CHARS - len(marker)
+
+        kept: list[str] = []
+        used = 0
+        for paragraph in summary.split("\n\n"):
+            if used + len(paragraph) + 2 > budget:
+                break
+            kept.append(paragraph)
+            used += len(paragraph) + 2
+
+        # No paragraph boundary within budget — fall back to a hard cut.
+        trimmed = "\n\n".join(kept) if kept else summary[:budget].rstrip()
+
+        logger.warning(
+            f"Summary was {len(summary)} chars, over the {MAX_SUMMARY_CHARS} "
+            f"budget; trimmed to {len(trimmed)}. Consider lowering "
+            f"SUMMARY_TARGET_WORDS or tightening the prompt caps."
+        )
+
+        return trimmed + marker
