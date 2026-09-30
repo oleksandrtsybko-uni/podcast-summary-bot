@@ -1,20 +1,20 @@
 {
   "lennys-podcast": {
-    "guid": "Jen Abel 3.0.txt",
-    "title": "How to close $100K+ enterprise deals, step by step | Jen Abel",
-    "published_date": "2026-08-23T00:00:00",
-    "processed_at": "2026-08-26T07:42:42.476795"
+    "guid": "Graham Weaver.txt",
+    "title": "The grief, loneliness, and burnout sweeping through the tech industry right now | Molly Graham",
+    "published_date": "2026-09-27T00:00:00",
+    "processed_at": "2026-09-30T13:20:23.927137"
   },
   "sub-club": {
-    "guid": "e8a74dca-efb9-47eb-8529-36b154c04432",
-    "title": "Why BoldVoice Charged From Day 1 and Ignored the Duolingo Freemium Playbook - Anada Lakra",
-    "published_date": "2026-09-16T08:00:00",
-    "processed_at": "2026-09-16T12:24:18.435811"
+    "guid": "e4e3de02-a7d1-45db-8bea-561b41f73676",
+    "title": "How WeWard Hit 20M Users Without Paid Ads - Yves Benchimol, WeWard",
+    "published_date": "2026-09-30T08:00:00",
+    "processed_at": "2026-09-30T13:20:45.273842"
   },
   "20vc": {
-    "guid": "94e767ab-7d80-40be-950b-f1d3ece84aaa",
-    "title": "20VC: Why AI Cannot Replace Humans in Enterprise | Why Work Processes Not Models Will Be The Most Valuable Asset in AI | Why Europe Has Lost and Building in the US vs EU with Daniel Dines, UiPath",
-    "published_date": "2026-09-21T07:07:00",
-    "processed_at": "2026-09-23T12:46:45.334288"
+    "guid": "83f96834-8b3f-469a-9ff3-998b6ef130f1",
+    "title": "20VC: $1BN ARR in 18 Months; The Untold Story of Higgsfield | Spending $4M Per Month on Models | Why Moats in AI are BS | Scaling a Content Team to 150 People with Alex Mashrabov",
+    "published_date": "2026-09-28T07:07:00",
+    "processed_at": "2026-09-30T13:25:37.728392"
   }
 }
