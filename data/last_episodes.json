@@ -1,20 +1,20 @@
 {
   "lennys-podcast": {
-    "guid": "Graham Weaver.txt",
-    "title": "The grief, loneliness, and burnout sweeping through the tech industry right now | Molly Graham",
-    "published_date": "2026-09-27T00:00:00",
-    "processed_at": "2026-09-30T13:20:23.927137"
+    "guid": "Josh Woodward.txt",
+    "title": "Why every company now needs to think and operate like a lab team | Josh Woodward (Google Labs, Gemini, AI Studio)",
+    "published_date": "2026-10-11T00:00:00",
+    "processed_at": "2026-10-14T12:38:17.540125"
   },
   "sub-club": {
-    "guid": "e4e3de02-a7d1-45db-8bea-561b41f73676",
-    "title": "How WeWard Hit 20M Users Without Paid Ads - Yves Benchimol, WeWard",
-    "published_date": "2026-09-30T08:00:00",
-    "processed_at": "2026-09-30T13:20:45.273842"
+    "guid": "09e91ee1-7536-4a6f-9c50-1d48448ab352",
+    "title": "How Cal AI turned creators into a growth machine - Jake Castillo, Cal AI",
+    "published_date": "2026-10-14T08:00:00",
+    "processed_at": "2026-10-14T12:38:33.998851"
   },
   "20vc": {
-    "guid": "c991fe09-5f31-4b35-93b4-d1887b228b5b",
-    "title": "20VC: Is Seed Investing Dead Without a $1BN Fund? | Does Ownership and Price Matter When Companies Can Be $1TRN Exits | Are AI Revenue Numbers Real and What to Watch Out For with Venky Ganesan, Menlo Ventures",
-    "published_date": "2026-10-05T07:07:00",
-    "processed_at": "2026-10-07T14:16:41.504984"
+    "guid": "3ab943ba-0422-4476-a007-aafe20be3c9c",
+    "title": "20VC: Atlassian CEO on Why Agents Won't Replace Interfaces | Why Enterprises Won't Trust Chinese Models | Why The Jury Is Still Out On The Benefits of Specialised Models with Mike Cannon-Brookes",
+    "published_date": "2026-10-12T07:07:00",
+    "processed_at": "2026-10-14T12:42:31.162031"
   }
 }
