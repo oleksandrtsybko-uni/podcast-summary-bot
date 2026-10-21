@@ -1,9 +1,9 @@
 {
   "lennys-podcast": {
-    "guid": "Josh Woodward.txt",
-    "title": "Why every company now needs to think and operate like a lab team | Josh Woodward (Google Labs, Gemini, AI Studio)",
-    "published_date": "2026-10-11T00:00:00",
-    "processed_at": "2026-10-14T12:38:17.540125"
+    "guid": "Emmanuel Ameisen.txt",
+    "title": "Inside the black box of AI: How AI models actually think | Emmanuel Ameisen (Anthropic)",
+    "published_date": "2026-10-18T00:00:00",
+    "processed_at": "2026-10-21T12:41:41.122185"
   },
   "sub-club": {
     "guid": "09e91ee1-7536-4a6f-9c50-1d48448ab352",
@@ -12,9 +12,9 @@
     "processed_at": "2026-10-14T12:38:33.998851"
   },
   "20vc": {
-    "guid": "3ab943ba-0422-4476-a007-aafe20be3c9c",
-    "title": "20VC: Atlassian CEO on Why Agents Won't Replace Interfaces | Why Enterprises Won't Trust Chinese Models | Why The Jury Is Still Out On The Benefits of Specialised Models with Mike Cannon-Brookes",
-    "published_date": "2026-10-12T07:07:00",
-    "processed_at": "2026-10-14T12:42:31.162031"
+    "guid": "29fe4b01-4795-4211-a2d5-cedb3a2d0cc6",
+    "title": "20VC: You Need $1BN To Do Seed Today: The Untold Truths of Venture | Who Wins and Who Loses in the Next Decade of VC | Why Margin and Price Matter Less in a World of AI with Sameer Dholakia, Bessemer",
+    "published_date": "2026-10-19T07:07:00",
+    "processed_at": "2026-10-21T12:46:32.552416"
   }
 }
