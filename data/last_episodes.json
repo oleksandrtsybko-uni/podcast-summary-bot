@@ -1,20 +1,20 @@
 {
   "lennys-podcast": {
-    "guid": "Emmanuel Ameisen.txt",
-    "title": "Inside the black box of AI: How AI models actually think | Emmanuel Ameisen (Anthropic)",
-    "published_date": "2026-10-18T00:00:00",
-    "processed_at": "2026-10-21T12:41:41.122185"
+    "guid": "Carole Robin.txt",
+    "title": "An 86-minute guide to finding PMF | Rob Snyder (Author, The Power of Pull)",
+    "published_date": "2026-10-25T00:00:00",
+    "processed_at": "2026-10-28T13:47:57.803798"
   },
   "sub-club": {
-    "guid": "09e91ee1-7536-4a6f-9c50-1d48448ab352",
-    "title": "How Cal AI turned creators into a growth machine - Jake Castillo, Cal AI",
-    "published_date": "2026-10-14T08:00:00",
-    "processed_at": "2026-10-14T12:38:33.998851"
+    "guid": "29105e16-4b2f-4364-b5db-8f0b2e463b04",
+    "title": "How Praktika Built a Profitable $50M ARR AI Business - Adam Turaev, Praktika",
+    "published_date": "2026-10-28T08:00:00",
+    "processed_at": "2026-10-28T13:48:15.622638"
   },
   "20vc": {
-    "guid": "29fe4b01-4795-4211-a2d5-cedb3a2d0cc6",
-    "title": "20VC: You Need $1BN To Do Seed Today: The Untold Truths of Venture | Who Wins and Who Loses in the Next Decade of VC | Why Margin and Price Matter Less in a World of AI with Sameer Dholakia, Bessemer",
-    "published_date": "2026-10-19T07:07:00",
-    "processed_at": "2026-10-21T12:46:32.552416"
+    "guid": "ade69352-b9cb-4e49-a952-a7d7741a3203",
+    "title": "20VC: Satya Nadella on Open vs Closed Models: Who Wins | Whether to Trust Frontier Model Providers | Why Companies Need to Own Their Own Intelligence | The Importance of Verticalisation: From Chips to Models and More",
+    "published_date": "2026-10-26T07:07:00",
+    "processed_at": "2026-10-28T13:50:03.769067"
   }
 }
