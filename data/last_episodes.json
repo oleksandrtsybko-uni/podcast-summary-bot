@@ -1,9 +1,9 @@
 {
   "lennys-podcast": {
-    "guid": "Carole Robin.txt",
-    "title": "An 86-minute guide to finding PMF | Rob Snyder (Author, The Power of Pull)",
-    "published_date": "2026-10-25T00:00:00",
-    "processed_at": "2026-10-28T13:47:57.803798"
+    "guid": "Hector Serrano.txt",
+    "title": "How a 19-year-old intern built the growth engine behind this $2B AI company | Hector Serrano",
+    "published_date": "2026-11-01T00:00:00",
+    "processed_at": "2026-11-04T15:03:16.715981"
   },
   "sub-club": {
     "guid": "29105e16-4b2f-4364-b5db-8f0b2e463b04",
@@ -12,9 +12,9 @@
     "processed_at": "2026-10-28T13:48:15.622638"
   },
   "20vc": {
-    "guid": "ade69352-b9cb-4e49-a952-a7d7741a3203",
-    "title": "20VC: Satya Nadella on Open vs Closed Models: Who Wins | Whether to Trust Frontier Model Providers | Why Companies Need to Own Their Own Intelligence | The Importance of Verticalisation: From Chips to Models and More",
-    "published_date": "2026-10-26T07:07:00",
-    "processed_at": "2026-10-28T13:50:03.769067"
+    "guid": "1f169d7f-e809-4a28-ac40-14ea0c835f77",
+    "title": "20VC: Who Wins the Inference Market | Has Open-Source LLM Inference Peaked? | What Happens to the Cost of Compute | The Real Limits of Post-Training and RL with Erik Bernhardsson, Modal CEO",
+    "published_date": "2026-11-02T07:07:00",
+    "processed_at": "2026-11-04T15:08:03.263131"
   }
 }
