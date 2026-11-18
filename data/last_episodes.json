@@ -6,15 +6,15 @@
     "processed_at": "2026-11-04T15:03:16.715981"
   },
   "sub-club": {
-    "guid": "29105e16-4b2f-4364-b5db-8f0b2e463b04",
-    "title": "How Praktika Built a Profitable $50M ARR AI Business - Adam Turaev, Praktika",
-    "published_date": "2026-10-28T08:00:00",
-    "processed_at": "2026-10-28T13:48:15.622638"
+    "guid": "ad83b5dd-4133-4a65-87f2-5a821f32f343",
+    "title": "What 80M users taught Flo about A/B testing - Mike Charniatsou",
+    "published_date": "2026-11-11T14:00:01",
+    "processed_at": "2026-11-18T16:09:03.597265"
   },
   "20vc": {
-    "guid": "1f169d7f-e809-4a28-ac40-14ea0c835f77",
-    "title": "20VC: Who Wins the Inference Market | Has Open-Source LLM Inference Peaked? | What Happens to the Cost of Compute | The Real Limits of Post-Training and RL with Erik Bernhardsson, Modal CEO",
-    "published_date": "2026-11-02T07:07:00",
-    "processed_at": "2026-11-04T15:08:03.263131"
+    "guid": "d58483f7-f3a8-4375-b3ca-9f357ff95d41",
+    "title": "20VC: Jev Creator on Why Data Is More Important Than Compute | Will US Open-Source Models Catch Chinese | The Cost of Intelligence and Tokens: What No One Sees But Needs to Know with Diogo Almeida",
+    "published_date": "2026-11-16T07:07:00",
+    "processed_at": "2026-11-18T16:13:54.358434"
   }
 }
